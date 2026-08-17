@@ -503,7 +503,7 @@ Target: within 3–5× of Zod for typical models (acceptable tradeoff for API pa
 
 | Question | Recommendation |
 |----------|----------------|
-| Monorepo tool? | **pnpm workspaces** + turborepo |
+| Monorepo tool? | **Bun workspaces**; pnpm and npm supported |
 | Min Node version? | **Node 20+** (native fetch, performance) |
 | ESM-only? | **Yes** — CJS via dual publish if demand |
 | Decorator standard? | Stage 3 primary, legacy fallback |

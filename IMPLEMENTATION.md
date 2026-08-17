@@ -10,8 +10,8 @@
 
 ```
 typedantic/
-├── package.json              # pnpm workspace root
-├── pnpm-workspace.yaml
+├── package.json              # Bun workspace root (also supports npm)
+├── pnpm-workspace.yaml       # pnpm compatibility
 ├── turbo.json
 ├── tsconfig.base.json
 ├── packages/
@@ -23,7 +23,8 @@ typedantic/
 ```
 
 **Tasks:**
-- [ ] Initialize pnpm monorepo with `typedantic` and `@typedantic/core`
+- [ ] Initialize a Bun workspace monorepo with `typedantic` and `@typedantic/core`
+- [ ] Verify the workspace scripts with pnpm and npm
 - [ ] Configure TypeScript 5.5+, strict mode, ESM
 - [ ] Set up Vitest for unit tests
 - [ ] Set up tsup for bundling (ESM + .d.ts)

@@ -5,8 +5,19 @@
 ## Install
 
 ```bash
+bun add typedantic reflect-metadata
+bun add typedantic-settings   # optional: env-based config
+```
+
+Alternatively, use pnpm or npm:
+
+```bash
+pnpm add typedantic reflect-metadata
+pnpm add typedantic-settings
+
+# npm
 npm install typedantic reflect-metadata
-npm install typedantic-settings   # optional: env-based config
+npm install typedantic-settings
 ```
 
 ## Quick start
@@ -55,10 +66,26 @@ User.modelJsonSchema();
 ## Development
 
 ```bash
+bun install
+bun run --filter '*' build
+bun run test      # 18 tests
+bun run --filter '*' typecheck
+```
+
+Alternatively:
+
+```bash
+# pnpm
 pnpm install
-pnpm build
-pnpm test      # 18 tests
-pnpm typecheck
+pnpm -r run build
+pnpm run test
+pnpm -r run typecheck
+
+# npm
+npm install
+npm run build --workspaces
+npm test
+npm run typecheck --workspaces
 ```
 
 ## Documentation

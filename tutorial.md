@@ -27,15 +27,17 @@ This guide walks you through rebuilding **Typedantic** from scratch without assi
 | Tool | Version |
 |------|---------|
 | Node.js | 20+ |
-| pnpm | 9+ |
+| Bun | 1.2+ |
 | TypeScript | 5.7+ |
 
-Enable pnpm:
+Install Bun:
 
 ```bash
-corepack enable
-corepack prepare pnpm@9.15.0 --activate
+curl -fsSL https://bun.sh/install | bash
 ```
+
+You can alternatively use pnpm 9+ (`corepack enable`) or npm 10+, which
+ships with Node.js 20.
 
 Create workspace root:
 
@@ -56,27 +58,51 @@ mkdir typedantic && cd typedantic
   "name": "typedantic-monorepo",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "pnpm -r run build",
+    "build": "turbo run build",
     "test": "vitest run",
-    "typecheck": "pnpm -r run typecheck",
-    "clean": "pnpm -r run clean"
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "tsup": "^8.3.5",
+    "turbo": "^2.3.3",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
-  },
-  "packageManager": "pnpm@9.15.0"
+  }
 }
 ```
 
-**`pnpm-workspace.yaml`**
+The `workspaces` field is used by Bun and npm. If you use pnpm, also add
+**`pnpm-workspace.yaml`**:
 
 ```yaml
 packages:
   - 'packages/*'
+```
+
+**`turbo.json`**
+
+```json
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}
 ```
 
 **`tsconfig.base.json`** — critical compiler flags for decorators:
@@ -110,6 +136,14 @@ export default defineConfig({
   },
 });
 ```
+
+Install the workspace dependencies:
+
+```bash
+bun install
+```
+
+Alternatively, run `pnpm install` or `npm install`.
 
 ### 2.2 Package layout
 
@@ -222,7 +256,14 @@ export type { CoreSchema, ValidationErrorDetail, DumpOptions } from './schema/ty
 - union validation
 - model with extra forbid
 
-Run: `pnpm --filter @typedantic/core test`
+Run with Bun:
+
+```bash
+bunx vitest run packages/typedantic-core
+```
+
+Alternatively, run `pnpm exec vitest run packages/typedantic-core` or
+`npx vitest run packages/typedantic-core`.
 
 ---
 
@@ -411,9 +452,19 @@ Compiler tries discriminator value first, then validates matching model schema.
 ## 7. Testing strategy
 
 ```bash
-pnpm build    # must succeed before tests
-pnpm test     # vitest run — target 18+ tests
-pnpm typecheck
+bun run build    # must succeed before tests
+bun run test     # vitest run — target 18+ tests
+bun run typecheck
+```
+
+Alternatively:
+
+```bash
+# pnpm
+pnpm build && pnpm test && pnpm typecheck
+
+# npm
+npm run build && npm test && npm run typecheck
 ```
 
 | Suite | Covers |
@@ -427,11 +478,16 @@ pnpm typecheck
 CI (`.github/workflows/ci.yml`):
 
 ```yaml
-- run: pnpm install
-- run: pnpm build
-- run: pnpm typecheck
-- run: pnpm test
+- uses: oven-sh/setup-bun@v2
+- run: bun install --frozen-lockfile
+- run: bun run build
+- run: bun run typecheck
+- run: bun run test
 ```
+
+For pnpm, use `pnpm install --frozen-lockfile` followed by `pnpm build`,
+`pnpm typecheck`, and `pnpm test`. For npm, use `npm ci` followed by
+`npm run build`, `npm run typecheck`, and `npm test`.
 
 ---
 
@@ -483,7 +539,7 @@ validate input → instance | ValidationError
 
 Use this to verify you recreated everything:
 
-- [ ] Monorepo with pnpm workspaces (3 packages)
+- [ ] Monorepo with Bun workspaces (3 packages; pnpm and npm supported)
 - [ ] CoreSchema types for all primitive and composite nodes
 - [ ] compileValidator with coercion, constraints, unions, models
 - [ ] SchemaValidator + ValidationError + SchemaSerializer
