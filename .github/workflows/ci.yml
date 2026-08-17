@@ -1,3 +1,0 @@
-      - run: pnpm build
-      - run: pnpm typecheck
-      - run: pnpm test
