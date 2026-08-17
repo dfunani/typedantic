@@ -1,0 +1,37 @@
+{
+  "name": "typedantic",
+  "version": "0.1.0",
+  "description": "Pydantic for TypeScript — class-based data validation and serialization",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "keywords": ["validation", "pydantic", "typescript", "schema", "json-schema"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@typedantic/core": "workspace:*",
+    "reflect-metadata": "^0.2.2"
+  },
+  "peerDependencies": {
+    "reflect-metadata": ">=0.2.0"
+  },
+  "peerDependenciesMeta": {
+    "reflect-metadata": {
+      "optional": true
+    }
+  }
+}
