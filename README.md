@@ -1,15 +1,24 @@
-# typedantic
+# Typedantic
 
-To install dependencies:
+Pydantic-style validation for TypeScript (work in progress).
+
+## Documentation (rebuild from scratch)
+
+The full curriculum lives in **[documentation/](./documentation/)**:
+
+- Start: [documentation/README.md](./documentation/README.md)
+- Linear path: [documentation/tutorial.md](./documentation/tutorial.md)
+- Why `test.ts` fails today: [documentation/topics/why-test-ts-fails.md](./documentation/topics/why-test-ts-fails.md)
+
+Milestone **V1** target: `int` / `bool` / `str` + `BaseModel` / `@Field` end-to-end.
+
+## Install (monorepo)
 
 ```bash
 bun install
+bun run build
+bun run test
+bun run typecheck
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+pnpm / npm alternatives are documented in the tutorial.
