@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { BaseModel, Field, modelConfig } from './packages/typedantic/src/index.js';
+import { BaseModel, Field, modelConfig } from '../packages/typedantic/src/index.js';
 
 @modelConfig({ extra: 'forbid' })
 class Test extends BaseModel {

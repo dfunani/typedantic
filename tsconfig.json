@@ -3,8 +3,16 @@
   "compilerOptions": {
     "noEmit": true,
     "rootDir": ".",
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["test.ts"],
-  "exclude": ["node_modules", "dist", "packages"]
+  "include": [
+    "tests/basic.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "packages"
+  ]
 }
