@@ -26,13 +26,14 @@ export function getBaseSchemaFromType(type: unknown, fieldInfo?: FieldInfo): Bas
     if (type === String || type === 'string') return { type: 'string' };
     if (type === Number || type === 'number') return { type: 'number' }; // V1 choice: Number → int
     if (type === Boolean || type === 'boolean') return { type: 'boolean' };
+    if (type === Date || type === 'date') return { type: 'date' };
 
     if (!fieldInfo) return { type: 'string' };
 
     if (isNumberConstraint(fieldInfo)) return { type: 'number' };
     if (isStringConstraint(fieldInfo)) return { type: 'string' };
 
-    return { type: type } as BaseSchema; // safe fallback for V1 (never emit unsupported nodes)
+    return { type: 'string' };
 }
 
 

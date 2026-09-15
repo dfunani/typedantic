@@ -20,3 +20,8 @@ export interface BooleanSchema {
     type: 'boolean';
     strict?: boolean;
 }
+
+export interface LiteralSchema {
+    type: 'literal';
+    expected: unknown[];
+}

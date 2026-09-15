@@ -33,9 +33,85 @@ export function buildModelFieldSchema(ctor: Function, config?: ConfigDict): Base
 }
 
 export function inferSchemaFromType(type: unknown, fieldInfo?: FieldInfo): BaseSchema {
-    const effective = fieldInfo?.type ?? type;
-    let base = getBaseSchemaFromType(effective);
+    const schema = inferBaseSchema(type, fieldInfo);
+    return wrapNullable(schema, fieldInfo);
+}
 
+function inferBaseSchema(type: unknown, fieldInfo?: FieldInfo): BaseSchema {
+    if (fieldInfo?.literal !== undefined) {
+        return inferLiteralSchema(fieldInfo);
+    }
+    if (fieldInfo?.enum) {
+        return { type: 'enum', members: fieldInfo.enum };
+    }
+    if (fieldInfo?.union) {
+        return inferUnionSchema(fieldInfo);
+    }
+
+    const effective = fieldInfo?.type ?? type;
+
+    if (effective === Date || effective === 'date') {
+        return { type: 'date' };
+    }
+    if (effective === Array || effective === 'list') {
+        return inferListSchema(fieldInfo);
+    }
+    if (effective === Object || effective === 'dict') {
+        return inferDictSchema(fieldInfo);
+    }
+    if (isModelConstructor(effective)) {
+        return buildModelFieldSchema(effective);
+    }
+
+    const base = getBaseSchemaFromType(effective, fieldInfo);
     return getSchemaConstraints(base, fieldInfo);
 }
 
+function wrapNullable(schema: BaseSchema, fieldInfo?: FieldInfo): BaseSchema {
+    if (fieldInfo?.nullable) return { type: 'nullable', schema };
+    return schema;
+}
+
+function isModelConstructor(type: unknown): type is Function {
+    return typeof type === 'function'
+        && type !== String
+        && type !== Number
+        && type !== Boolean
+        && type !== Date
+        && type !== Array
+        && type !== Object
+        && typeof (type as { modelValidate?: unknown }).modelValidate === 'function';
+}
+
+
+function inferLiteralSchema(fieldInfo: FieldInfo): BaseSchema {
+    if (Array.isArray(fieldInfo.literal)) {
+        return { type: 'literal', expected: fieldInfo.literal };
+    }
+    return { type: 'literal', expected: [fieldInfo.literal] };
+}
+
+function inferUnionSchema(fieldInfo: FieldInfo): BaseSchema {
+    return {
+        type: 'union',
+        choices: fieldInfo.union?.map((choice) => inferSchemaFromType(choice)) ?? [],
+        discriminator: fieldInfo.discriminator,
+    };
+}
+
+function inferDictSchema(fieldInfo?: FieldInfo): BaseSchema {
+    return {
+        type: 'dict',
+        valuesSchema: inferSchemaFromType(fieldInfo?.values ?? String),
+        keysSchema: fieldInfo?.keys ? inferSchemaFromType(fieldInfo.keys) : undefined,
+    };
+}
+
+function inferListSchema(fieldInfo?: FieldInfo): BaseSchema {
+    return {
+        type: 'list',
+        itemsSchema: inferSchemaFromType(fieldInfo?.items ?? String),
+        minLength: fieldInfo?.minLength,
+        maxLength: fieldInfo?.maxLength,
+    };
+}

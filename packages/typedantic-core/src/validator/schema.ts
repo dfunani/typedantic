@@ -17,15 +17,19 @@ export class SchemaValidator {
 
     validateModel(input: unknown, config?: ValidationConfigSchema): unknown {
         const strict = config?.strict ?? this.config.strict;
+        const errors: ValidationErrorDetailSchema[] = [];
 
         const result = this.validatorFunction(input, {
             path: [],
             config: { strict },
-            errors: this.errors,
+            errors,
         });
 
-        if (this.errors.length > 0) {
-            throw new ValidationError(this.errors);
+        this.errors.length = 0;
+        this.errors.push(...errors);
+
+        if (errors.length > 0) {
+            throw new ValidationError([...errors]);
         }
 
         return result;
