@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Field } from 'typedantic';
 import { BaseSettings, settingsConfig } from 'typedantic-settings';
 
-@settingsConfig({ caseSensitive: false, envFile: 'test.env' })
+@settingsConfig({ caseSensitive: false, envFile: 'tests/test.env' })
 class AppSettings extends BaseSettings {
     @Field({ type: String })
     app_host!: string;

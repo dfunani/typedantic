@@ -16,8 +16,8 @@ const ok = Test.modelValidate({ flag: 10, name: 'Ada', active: true, extra_field
 console.log(ok.modelDump());
 
 try {
-    const err = Test.modelValidate({ flag: '1', name: 'Ada', active: true });
-    console.log('expected error', err.modelDumpJson());
+    const outcome = Test.modelValidate({ flag: '1', name: 'Ada', active: true });
+    console.log('expected outcome', outcome.modelDumpJson());
 } catch (e) {
     console.log('expected error', e);
 }
