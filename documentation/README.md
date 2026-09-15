@@ -73,9 +73,9 @@ pet!: Cat | Dog;
 
 **V2 must include:**
 
-1. Core: `list`, `dict` (+ `keysSchema`), `union` (strict discriminator), `literal`, `enum`, `date`, `float`, `nullable`, defaults, function wrappers
+1. Core: `array`, `object` (+ `keysSchema`), `union` (strict discriminator), `literal`, `enum`, `date`, `int` / `number`, `nullable`, defaults, function wrappers
 2. Constraint messages interpolate **limits**, not inputs; missing-field `location` includes the name
-3. Field options: `items`, `values`/`keys`, `enum`, `literal`, `union`, `nullable`, `type: 'float'`
+3. Field options: `items`, `values`/`keys`, `enum`, `literal`, `union`, `nullable`, `type: 'number'`
 4. Unit tests under `packages/*/tests/` and functional scripts under `tests/`
 
 Still later: JSON Schema, TypeAdapter, computed fields, field serializers.
@@ -105,7 +105,7 @@ typedantic-settings  →  typedantic  →  @typedantic/core
 | `modelDumpJson` | Skips computed/serializers | Dump via `modelDump` then stringify |
 | Discriminated unions | Wrong tag can pass | Reject unknown tags |
 | JSON Schema patterns | `String(/re/)` | Use `RegExp.source` |
-| Float `multipleOf` / dict keys | Declared unused | Enforce |
+| `number` `multipleOf` / object keys | Declared unused | Enforce |
 | Settings | Typing/prefix/nesting gaps | Polymorphic + prefix + nestFlat |
 | Mutable defaults | Shared `default: []` | Prefer `defaultFactory` |
 

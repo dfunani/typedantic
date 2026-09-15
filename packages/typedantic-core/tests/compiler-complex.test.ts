@@ -3,8 +3,8 @@ import { SchemaValidator, ValidationError } from '../src/index.js';
 import type { BaseSchema } from '../src/schema/types.js';
 
 describe('complex compilers', () => {
-    it('validates lists with minLength and item schemas', () => {
-        const schema: BaseSchema = { type: 'list', itemsSchema: { type: 'string', minLength: 1 }, minLength: 1 };
+    it('validates arrays with minLength and item schemas', () => {
+        const schema: BaseSchema = { type: 'array', itemsSchema: { type: 'string', minLength: 1 }, minLength: 1 };
         const v = new SchemaValidator(schema);
         expect(v.validateModel(['a'])).toEqual(['a']);
         expect(() => v.validateModel([])).toThrow(ValidationError);
@@ -12,11 +12,11 @@ describe('complex compilers', () => {
         expect(() => v.validateModel('nope')).toThrow(ValidationError);
     });
 
-    it('validates dict values and keysSchema', () => {
+    it('validates object values and keysSchema', () => {
         const schema: BaseSchema = {
-            type: 'dict',
+            type: 'object',
             keysSchema: { type: 'string', minLength: 2 },
-            valuesSchema: { type: 'number', ge: 0 },
+            valuesSchema: { type: 'int', ge: 0 },
         };
         const v = new SchemaValidator(schema);
         expect(v.validateModel({ ab: 1 })).toEqual({ ab: 1 });
@@ -40,7 +40,7 @@ describe('complex compilers', () => {
         expect(nullable.validateModel(null)).toBeNull();
         expect(nullable.validateModel('ok')).toBe('ok');
 
-        const optional = new SchemaValidator({ type: 'optional', schema: { type: 'number' } });
+        const optional = new SchemaValidator({ type: 'optional', schema: { type: 'int' } });
         expect(optional.validateModel(undefined)).toBeUndefined();
         expect(optional.validateModel(1)).toBe(1);
 
@@ -52,7 +52,7 @@ describe('complex compilers', () => {
     it('clones array defaults so instances do not share state', () => {
         const schema: BaseSchema = {
             type: 'default',
-            schema: { type: 'list', itemsSchema: { type: 'string' } },
+            schema: { type: 'array', itemsSchema: { type: 'string' } },
             defaultValue: [],
         };
         const v = new SchemaValidator(schema);

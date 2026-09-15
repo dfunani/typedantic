@@ -7,7 +7,7 @@ export function compileObjects(
     return (input, ctx) => {
         if (typeof input !== 'object' || input === null || Array.isArray(input)) {
             ctx.errors.push({
-                type: 'dict_type',
+                type: 'object_type',
                 location: [...ctx.path],
                 message: 'Input should be a valid object',
                 input,

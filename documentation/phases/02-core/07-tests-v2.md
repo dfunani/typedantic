@@ -12,8 +12,8 @@ Add one file per compiler family (names match the compiler folders):
 
 | File | Covers |
 |------|--------|
-| `compiler-primitives.test.ts` | number/string/literal/enum/float/any/never + constraint messages |
-| `compiler-complex.test.ts` | list, dict + `keysSchema`, date, nullable/optional/default, cloned defaults |
+| `compiler-primitives.test.ts` | int/string/literal/enum/number/any/never + constraint messages |
+| `compiler-complex.test.ts` | array, object + `keysSchema`, date, nullable/optional/default, cloned defaults |
 | `compiler-unions.test.ts` | tagged (no fallthrough) and untagged |
 | `compiler-functions.test.ts` | before/after/wrap/plain + default-factory |
 | `compiler-model-fields.test.ts` | missing-field **location**, aliases, cloned `default: []` |
@@ -28,7 +28,7 @@ Copy the current test files from the repo if you are following this tutorial aga
 
 ```ts
 // constraint in the message, not the input
-const v = new SchemaValidator({ type: 'number', ge: 1 });
+const v = new SchemaValidator({ type: 'int', ge: 1 });
 expect(() => v.validateModel(0)).toThrow(ValidationError);
 // message contains "greater than or equal to 1"
 
@@ -41,7 +41,7 @@ validateModel({}) → errors[].location includes ['name']
 { kind: 'bird', barks: true } → throws (no fallthrough)
 
 // keysSchema
-{ type: 'dict', keysSchema: { type: 'string', minLength: 2 }, valuesSchema: { type: 'number' } }
+{ type: 'object', keysSchema: { type: 'string', minLength: 2 }, valuesSchema: { type: 'int' } }
 { a: 1 } → throws
 ```
 

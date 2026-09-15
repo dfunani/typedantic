@@ -17,7 +17,7 @@ describe('Field schema inference', () => {
         @Field({ type: Array, items: String, minLength: 1 })
         tags!: string[];
 
-        @Field({ type: 'dict', values: Number, keys: String })
+        @Field({ type: 'object', values: Number, keys: String })
         scores!: Record<string, number>;
 
         @Field({ type: Address })
@@ -32,28 +32,28 @@ describe('Field schema inference', () => {
         @Field({ type: String, nullable: true })
         note!: string | null;
 
-        @Field({ type: 'float', ge: 0 })
+        @Field({ type: 'number', ge: 0 })
         rating!: number;
     }
 
     it('maps Field options onto CoreSchema nodes', () => {
         const fields = getModelFields(Sample);
         expect(fields.createdAt.schema).toEqual({ type: 'date' });
-        expect(fields.tags.schema).toMatchObject({ type: 'list', minLength: 1 });
-        expect(fields.scores.schema).toMatchObject({ type: 'dict' });
+        expect(fields.tags.schema).toMatchObject({ type: 'array', minLength: 1 });
+        expect(fields.scores.schema).toMatchObject({ type: 'object' });
         expect(fields.shipping.schema).toMatchObject({ type: 'model-fields', modelName: 'Address' });
         expect(fields.status.schema).toEqual({ type: 'enum', members: ['pending', 'shipped'] });
         expect(fields.kind.schema).toEqual({ type: 'literal', expected: ['order'] });
         expect(fields.note.schema).toMatchObject({ type: 'nullable' });
-        expect(fields.rating.schema).toMatchObject({ type: 'float', ge: 0 });
+        expect(fields.rating.schema).toMatchObject({ type: 'number', ge: 0 });
     });
 
-    it('does not treat a bare Object design type as a string dict', () => {
+    it('does not treat a bare Object design type as an open object', () => {
         class Loose extends BaseModel {
             @Field({ type: Object })
             blob!: object;
         }
         const fields = getModelFields(Loose);
-        expect(fields.blob.schema.type).not.toBe('dict');
+        expect(fields.blob.schema.type).not.toBe('object');
     });
 });

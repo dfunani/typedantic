@@ -203,7 +203,7 @@ This is a full how-to, same shape as V1: phase pages have the copy-paste, this f
 
 | # | Chapter | Output |
 |---|---------|--------|
-| 1 | [phases/02-core/06-full-engine-v2.md](./phases/02-core/06-full-engine-v2.md) | list, dict + keys, union (strict tag), float, date, functions |
+| 1 | [phases/02-core/06-full-engine-v2.md](./phases/02-core/06-full-engine-v2.md) | array, object + keys, union (strict tag), int/number, date, functions |
 | 2 | [phases/02-core/07-tests-v2.md](./phases/02-core/07-tests-v2.md) | `packages/typedantic-core/tests/` |
 
 ```bash
@@ -214,7 +214,7 @@ bunx vitest run packages/typedantic-core
 
 | # | Chapter | Output |
 |---|---------|--------|
-| 1 | [phases/03-typedantic/06-full-api-v2.md](./phases/03-typedantic/06-full-api-v2.md) | Field `items` / `dict` / `union` / `float` / `nullable` |
+| 1 | [phases/03-typedantic/06-full-api-v2.md](./phases/03-typedantic/06-full-api-v2.md) | Field `items` / `object` / `union` / `number` / `nullable` |
 | 2 | [phases/03-typedantic/07-tests-v2.md](./phases/03-typedantic/07-tests-v2.md) | package unit tests + root `tests/*.ts` |
 
 ```bash

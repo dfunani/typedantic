@@ -1,8 +1,8 @@
 import { BaseSchema } from "../../types.js";
 
 
-export interface DictSchema {
-    type: 'dict';
+export interface ObjectSchema {
+    type: 'object';
     valuesSchema: BaseSchema;
     keysSchema?: BaseSchema;
 }

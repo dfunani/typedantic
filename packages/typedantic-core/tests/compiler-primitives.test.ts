@@ -13,8 +13,8 @@ function errorOf(fn: () => unknown): ValidationError {
 }
 
 describe('primitive compilers', () => {
-    it('reports the constraint, not the input, for number ge', () => {
-        const v = new SchemaValidator({ type: 'number', ge: 1 });
+    it('reports the constraint, not the input, for int ge', () => {
+        const v = new SchemaValidator({ type: 'int', ge: 1 });
         const err = errorOf(() => v.validateModel(0));
         expect(err.message).toContain('greater than or equal to 1');
         expect(err.errors[0].location).toEqual([]);
@@ -37,8 +37,8 @@ describe('primitive compilers', () => {
         expect(() => v.validateModel('lost')).toThrow(ValidationError);
     });
 
-    it('accepts floats and enforces multipleOf', () => {
-        const v = new SchemaValidator({ type: 'float', ge: 0, multipleOf: 0.5 });
+    it('accepts JS numbers and enforces multipleOf', () => {
+        const v = new SchemaValidator({ type: 'number', ge: 0, multipleOf: 0.5 });
         expect(v.validateModel(1.5)).toBe(1.5);
         expect(v.validateModel('2.0')).toBe(2);
         expect(() => v.validateModel(-0.1)).toThrow(ValidationError);

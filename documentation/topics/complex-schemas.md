@@ -4,28 +4,34 @@ How `@Field` options become CoreSchema, and how the compiler treats them.
 
 Read after [../phases/02-core/06-full-engine-v2.md](../phases/02-core/06-full-engine-v2.md) and [../phases/03-typedantic/06-full-api-v2.md](../phases/03-typedantic/06-full-api-v2.md).
 
-## Integer vs float
+## Integer vs number
+
+JavaScript has one numeric type: IEEE-754 `number`. There is no `float`. Integers are a predicate (`Number.isInteger`), not a language type.
 
 | You write | IR | Accepts |
 |-----------|-----|---------|
-| `@Field({ type: Number })` | `{ type: 'number' }` | integers only (`1` yes, `1.5` no) |
-| `@Field({ type: 'float' })` | `{ type: 'float' }` | any finite number |
+| `@Field({ type: Number })` or `'int'` | `{ type: 'int' }` | integers only (`1` yes, `1.5` no) |
+| `@Field({ type: 'number' })` | `{ type: 'number' }` | any finite JS number |
 
-This matches V1’s “Number → int” choice and main’s separate `int` / `float` compilers.
+This matches V1’s “Number → int” choice. Do not name the IEEE node `float` — that is Python, not JavaScript.
 
 ## Collections
+
+IR nodes are `array` and `object` — the JS names. `array` is `Array.isArray`. `object` is a plain key/value map (`Record`), not the `Object` constructor and not a model.
 
 ```ts
 @Field({ type: Array, items: LineItem, minLength: 1 })
 items!: LineItem[];
 
-@Field({ type: 'dict', values: Number, keys: String })
+@Field({ type: 'object', values: Number, keys: String })
 scores!: Record<string, number>;
 ```
 
+`type: Array` is accepted because `design:type` is `Array`. Prefer `type: 'array'` when you write the type yourself.
+
 `keys` is compiled (`keysSchema`). Keys from `Object.entries` are strings, so `keys: String` plus `minLength` is the usual constraint.
 
-Do **not** write `@Field({ type: Object })` and expect a dict. Pass `type: 'dict'` or `values` / `keys`.
+Do **not** write `@Field({ type: Object })` and expect an open object. Pass `type: 'object'` or `values` / `keys`. `model-fields` is the shaped class; `'object'` is the open map.
 
 ## Tagged unions
 

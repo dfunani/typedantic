@@ -39,7 +39,7 @@ Reflect.getMetadata('design:type', User.prototype, 'age') // → Number
 | You write | `design:type` at runtime |
 |-----------|--------------------------|
 | `name!: string` | `String` |
-| `age!: number` | `Number` (cannot distinguish int vs float) |
+| `age!: number` | `Number` (cannot distinguish `int` vs IEEE `number`) |
 | `ok!: boolean` | `Boolean` |
 | `tags!: string[]` | `Array` — **element type lost** |
 | `value!: string \| null` | often `Object` |

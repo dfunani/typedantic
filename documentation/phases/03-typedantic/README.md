@@ -18,7 +18,7 @@ This package turns decorators + classes into `CoreSchema` and runs `@typedantic/
 3. [03-schema-builder-v1.md](./03-schema-builder-v1.md)
 4. [04-base-model-v1.md](./04-base-model-v1.md)
 5. [05-public-exports-and-smoke.md](./05-public-exports-and-smoke.md)
-6. [06-full-api-v2.md](./06-full-api-v2.md) — Field → list/dict/union/date/float
+6. [06-full-api-v2.md](./06-full-api-v2.md) — Field → array/object/union/date/number
 7. [07-tests-v2.md](./07-tests-v2.md) — `packages/typedantic/tests/` + root `tests/`
 
 Deep dives: [../../topics/reflect-metadata.md](../../topics/reflect-metadata.md), [../../topics/decorators.md](../../topics/decorators.md)

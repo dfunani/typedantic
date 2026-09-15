@@ -35,7 +35,7 @@ describe('unions', () => {
     it('tries members in order when untagged', () => {
         const v = new SchemaValidator({
             type: 'union',
-            choices: [{ type: 'number' }, { type: 'string' }],
+            choices: [{ type: 'int' }, { type: 'string' }],
         });
         expect(v.validateModel(1)).toBe(1);
         expect(v.validateModel('hello')).toBe('hello');

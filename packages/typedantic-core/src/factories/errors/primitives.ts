@@ -12,29 +12,29 @@ export function createErrorDetails(): Record<string, Record<string, { name: stri
                 "message": "Input should be {placeholder}",
             }
         },
-        "float": {
+        "int": {
             "type": {
-                "name": "float_type",
-                "message": "Input should be a valid number",
+                "name": "int_type",
+                "message": "Input should be a valid integer",
             },
             "greater_than_equal": {
-                "name": "float_greater_than_equal",
+                "name": "int_greater_than_equal",
                 "message": "Input should be greater than or equal to {placeholder}",
             },
             "greater_than": {
-                "name": "float_greater_than",
+                "name": "int_greater_than",
                 "message": "Input should be greater than {placeholder}",
             },
             "less_than_equal": {
-                "name": "float_less_than_equal",
+                "name": "int_less_than_equal",
                 "message": "Input should be less than or equal to {placeholder}",
             },
             "less_than": {
-                "name": "float_less_than",
+                "name": "int_less_than",
                 "message": "Input should be less than {placeholder}",
             },
             "multiple_of": {
-                "name": "float_multiple_of",
+                "name": "int_multiple_of",
                 "message": "Input should be a multiple of {placeholder}",
             },
         },

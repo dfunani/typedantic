@@ -2,8 +2,8 @@ import type {
     BaseSchema,
 } from '../schema/types.js';
 import type { ValidationConfigSchema, ValidationErrorDetailSchema } from '../schema/models/configurations.js';
+import { compileInts } from './primitives/ints.js';
 import { compileNumbers } from './primitives/numbers.js';
-import { compileFloats } from './primitives/floats.js';
 import { compileStrings } from './primitives/strings.js';
 import { compileBooleans } from './primitives/booleans.js';
 import { compileModelFields } from './fields/model-fields.js';
@@ -48,10 +48,10 @@ function createValidationError(input: unknown, ctx: ValidationContext): Validati
 
 export function compileValidator(schema: BaseSchema): ValidatorFunction {
     switch (schema.type) {
+        case 'int':
+            return compileInts(schema);
         case 'number':
             return compileNumbers(schema);
-        case 'float':
-            return compileFloats(schema);
         case 'string':
             return compileStrings(schema);
         case 'boolean':
@@ -60,9 +60,9 @@ export function compileValidator(schema: BaseSchema): ValidatorFunction {
             return compileLiterals(schema);
         case 'enum':
             return compileEnums(schema);
-        case 'list':
+        case 'array':
             return compileArrays(schema, compileValidator(schema.itemsSchema));
-        case 'dict':
+        case 'object':
             return compileObjects(
                 compileValidator(schema.valuesSchema),
                 schema.keysSchema ? compileValidator(schema.keysSchema) : undefined,

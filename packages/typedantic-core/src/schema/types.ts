@@ -1,7 +1,7 @@
-import { NumbersSchema, StringSchema, BooleanSchema, LiteralSchema, FloatsSchema, AnySchema, NeverSchema } from "./models/primitives.js";
+import { IntSchema, NumbersSchema, StringSchema, BooleanSchema, LiteralSchema, AnySchema, NeverSchema } from "./models/primitives.js";
 import { ModelFieldsSchema } from "./models/fields.js";
-import { ArraysSchema } from "./models/complex/arrays.js";
-import { DictSchema } from "./models/complex/objects.js";
+import { ArraySchema } from "./models/complex/arrays.js";
+import { ObjectSchema } from "./models/complex/objects.js";
 import { UnionSchema } from "./models/complex/field-properties.js";
 import { NullableSchema } from "./models/complex/field-properties.js";
 import { OptionalSchema } from "./models/complex/field-properties.js";
@@ -15,15 +15,15 @@ import { DateSchema } from "./models/complex/dates.js";
 import { EnumsSchema } from "./models/complex/enums.js";
 
 export type BaseSchema =
+    | IntSchema
     | NumbersSchema
-    | FloatsSchema
     | StringSchema
     | BooleanSchema
     | LiteralSchema
     | EnumsSchema
     | ModelFieldsSchema
-    | ArraysSchema
-    | DictSchema
+    | ArraySchema
+    | ObjectSchema
     | UnionSchema
     | NullableSchema
     | OptionalSchema

@@ -1,6 +1,6 @@
 # Core V2 — Full engine how-to
 
-V1 compiled `number` / `string` / `boolean` / `model-fields`.  
+V1 compiled `int` / `string` / `boolean` / `model-fields`.  
 V2 expands `@typedantic/core` to a production-ready IR + compiler.
 
 Do this **after** [05-tests-v1.md](./05-tests-v1.md) is green.
@@ -16,11 +16,11 @@ A `SchemaValidator` that can compile and run:
 
 | Node | Role |
 |------|------|
-| `number` | Integer (V1 `int`) |
-| `float` | JS number, including fractions + `multipleOf` |
+| `int` | Integer (`Number.isInteger`) |
+| `number` | JS IEEE-754 number, including fractions + `multipleOf` |
 | `string` / `boolean` | V1 primitives |
 | `literal` / `enum` | Closed values |
-| `list` / `dict` | Collections (`dict.keysSchema` is enforced) |
+| `array` / `object` | Collections (`object.keysSchema` is enforced) |
 | `union` | Untagged try-all, or tagged with **no fallthrough** |
 | `nullable` / `optional` / `default` / `default-factory` | Presence |
 | `function-before` / `after` / `wrap` / `plain` | Validator wrappers |
@@ -35,8 +35,8 @@ A `SchemaValidator` that can compile and run:
 | Area | `main` | Do this instead |
 |------|--------|-----------------|
 | Discriminator miss | Falls through to try-every-member | If `discriminator` is set and no branch matches → **error** |
-| `dict.keysSchema` | Declared, ignored | Run a key validator per entry |
-| Float `multipleOf` | Unused | Enforce with a small epsilon |
+| `object.keysSchema` | Declared, ignored | Run a key validator per entry |
+| `number` `multipleOf` | Unused | Enforce with a small epsilon |
 | Constraint messages | Interpolate `schema.ge` | Never substitute the **input** into `{placeholder}` |
 | Missing-field `location` | `[...path, name]` | Do not leave the error on the parent path |
 | Mutable `default: []` | Shared reference | Clone arrays / plain objects when applying defaults |
@@ -53,11 +53,11 @@ packages/typedantic-core/src/
 ├── schema/
 │   ├── types.ts                         ← BaseSchema union
 │   └── models/
-│       ├── primitives.ts                ← number, float, string, boolean, literal, any, never
+│       ├── primitives.ts                ← int, number, string, boolean, literal, any, never
 │       ├── fields.ts                    ← model-fields
 │       └── complex/
-│           ├── arrays.ts                ← list
-│           ├── objects.ts               ← dict
+│           ├── arrays.ts                ← array
+│           ├── objects.ts               ← object
 │           ├── dates.ts
 │           ├── enums.ts
 │           ├── field-properties.ts      ← union, nullable, optional, default
@@ -90,19 +90,19 @@ packages/typedantic-core/tests/
 
 **Path:** `packages/typedantic-core/src/schema/types.ts`
 
-Keep V1 names (`number` / `string` / `boolean`) and add V2 nodes. `number` stays **integer**. Use `float` for `1.5`.
+Keep V1 names (`int` / `string` / `boolean`) and add V2 nodes. JS has no `float`: `number` is IEEE-754. `int` is `Number.isInteger`.
 
 ```ts
 export type BaseSchema =
+  | IntSchema
   | NumbersSchema
-  | FloatsSchema
   | StringSchema
   | BooleanSchema
   | LiteralSchema
   | EnumsSchema
   | ModelFieldsSchema
-  | ArraysSchema
-  | DictSchema
+  | ArraySchema
+  | ObjectSchema
   | UnionSchema
   | NullableSchema
   | OptionalSchema
@@ -117,7 +117,7 @@ export type BaseSchema =
   | NeverSchema;
 ```
 
-`DictSchema` must include `keysSchema?: BaseSchema`.  
+`ObjectSchema` must include `keysSchema?: BaseSchema`.  
 `UnionSchema` must include `discriminator?: string`.
 
 Copy the per-node interfaces from the matching files under `schema/models/`. Do **not** declare `DateSchema` twice (it belongs in `complex/dates.ts` only).
@@ -135,7 +135,7 @@ export function interpolatePlaceholder(message: string, placeholder: unknown): s
 }
 ```
 
-Number / string / float / literal compilers pass `schema.ge`, `schema.minLength`, `re.source`, or `JSON.stringify(expected)` — **never** the invalid input.
+Int / string / number / literal compilers pass `schema.ge`, `schema.minLength`, `re.source`, or `JSON.stringify(expected)` — **never** the invalid input.
 
 If `qty` has `ge: 1` and the input is `0`, the message must be:
 
@@ -154,10 +154,10 @@ Keep this file as a **switch**. Each case delegates to a compiler in `primitives
 ```ts
 export function compileValidator(schema: BaseSchema): ValidatorFunction {
   switch (schema.type) {
+    case 'int':
+      return compileInts(schema);
     case 'number':
       return compileNumbers(schema);
-    case 'float':
-      return compileFloats(schema);
     case 'string':
       return compileStrings(schema);
     case 'boolean':
@@ -166,9 +166,9 @@ export function compileValidator(schema: BaseSchema): ValidatorFunction {
       return compileLiterals(schema);
     case 'enum':
       return compileEnums(schema);
-    case 'list':
+    case 'array':
       return compileArrays(schema, compileValidator(schema.itemsSchema));
-    case 'dict':
+    case 'object':
       return compileObjects(
         compileValidator(schema.valuesSchema),
         schema.keysSchema ? compileValidator(schema.keysSchema) : undefined,
@@ -237,7 +237,7 @@ export function compileObjects(
   return (input, ctx) => {
     if (typeof input !== 'object' || input === null || Array.isArray(input)) {
       ctx.errors.push({
-        type: 'dict_type',
+        type: 'object_type',
         location: [...ctx.path],
         message: 'Input should be a valid object',
         input,
@@ -314,11 +314,11 @@ Each `validateModel` call must use a **fresh** `errors` array so a cached valida
 
 ---
 
-## 8. Float `multipleOf`
+## 8. Number `multipleOf`
 
-**Path:** `packages/typedantic-core/src/compiler/primitives/floats.ts`
+**Path:** `packages/typedantic-core/src/compiler/primitives/numbers.ts`
 
-`float` accepts any finite `number` (after optional string coercion). Integer-only values stay on `number`.
+`number` accepts any finite JS `number` (after optional string coercion). Integer-only values stay on `int`.
 
 ```ts
 const quotient = value / multipleOf;

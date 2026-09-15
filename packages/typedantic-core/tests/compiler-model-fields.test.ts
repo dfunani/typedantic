@@ -9,7 +9,7 @@ describe('model-fields compiler', () => {
         fields: {
             name: { schema: { type: 'string', minLength: 1 }, required: true },
             zip: { schema: { type: 'string' }, required: true, alias: 'postal_code' },
-            tags: { schema: { type: 'list', itemsSchema: { type: 'string' } }, required: false, default: [] },
+            tags: { schema: { type: 'array', itemsSchema: { type: 'string' } }, required: false, default: [] },
         },
     };
 

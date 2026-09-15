@@ -8,7 +8,7 @@ Vitest include: `packages/**/tests/**/*.test.ts`.
 
 | File | Covers |
 |------|--------|
-| `field-schema.test.ts` | `getModelFields` emits date/list/dict/model/enum/literal/nullable/float; bare `Object` is **not** a dict |
+| `field-schema.test.ts` | `getModelFields` emits date/array/object/model/enum/literal/nullable/number; bare `Object` is **not** an open object |
 | `base-model.test.ts` | `modelValidate` on nested tagged unions, enums, `defaultFactory`, extra-forbid |
 
 Import `reflect-metadata` first. Import the package from `../src/index.js` so tests run against source.
@@ -24,8 +24,8 @@ bunx vitest run packages/typedantic
 | File | What it proves |
 |------|----------------|
 | `basic.ts` | V1 primitives + extra ignore |
-| `advanced.ts` | Nested order: list, dict, date, enum, union, alias, nullable, defaults |
-| `collections.ts` | list minLength + dict |
+| `advanced.ts` | Nested order: array, object, date, enum, union, alias, nullable, defaults |
+| `collections.ts` | array minLength + object |
 | `unions.ts` | Cat/Dog discriminator + unknown tag |
 | `defaults.ts` | `default: []` is cloned across validates |
 | `basic-settings.ts` | env + `.env` |

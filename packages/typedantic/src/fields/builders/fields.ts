@@ -53,14 +53,14 @@ function inferBaseSchema(type: unknown, fieldInfo?: FieldInfo): BaseSchema {
     if (effective === Date || effective === 'date') {
         return { type: 'date' };
     }
-    if (effective === Array || effective === 'list') {
-        return inferListSchema(fieldInfo);
+    if (effective === Array || effective === 'array') {
+        return inferArraySchema(fieldInfo);
     }
-    if (effective === 'dict' || fieldInfo?.values !== undefined || fieldInfo?.keys !== undefined) {
-        return inferDictSchema(fieldInfo);
+    if (effective === 'object' || fieldInfo?.values !== undefined || fieldInfo?.keys !== undefined) {
+        return inferObjectSchema(fieldInfo);
     }
-    if (effective === 'float') {
-        return getSchemaConstraints({ type: 'float' }, fieldInfo);
+    if (effective === 'number') {
+        return getSchemaConstraints({ type: 'number' }, fieldInfo);
     }
     if (isModelConstructor(effective)) {
         return buildModelFieldSchema(effective);
@@ -102,17 +102,17 @@ function inferUnionSchema(fieldInfo: FieldInfo): BaseSchema {
     };
 }
 
-function inferDictSchema(fieldInfo?: FieldInfo): BaseSchema {
+function inferObjectSchema(fieldInfo?: FieldInfo): BaseSchema {
     return {
-        type: 'dict',
+        type: 'object',
         valuesSchema: inferSchemaFromType(fieldInfo?.values ?? String),
         keysSchema: fieldInfo?.keys ? inferSchemaFromType(fieldInfo.keys) : undefined,
     };
 }
 
-function inferListSchema(fieldInfo?: FieldInfo): BaseSchema {
+function inferArraySchema(fieldInfo?: FieldInfo): BaseSchema {
     return {
-        type: 'list',
+        type: 'array',
         itemsSchema: inferSchemaFromType(fieldInfo?.items ?? String),
         minLength: fieldInfo?.minLength,
         maxLength: fieldInfo?.maxLength,

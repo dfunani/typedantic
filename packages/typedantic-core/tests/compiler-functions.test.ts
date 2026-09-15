@@ -17,7 +17,7 @@ describe('function wrappers', () => {
     it('runs function-after only when inner validation succeeds', () => {
         const schema: BaseSchema = {
             type: 'function-after',
-            schema: { type: 'number', ge: 0 },
+            schema: { type: 'int', ge: 0 },
             fn: (input) => (input as number) + 1,
         };
         const v = new SchemaValidator(schema);
@@ -28,7 +28,7 @@ describe('function wrappers', () => {
     it('lets function-wrap call the inner handler', () => {
         const schema: BaseSchema = {
             type: 'function-wrap',
-            schema: { type: 'number' },
+            schema: { type: 'int' },
             fn: (input, handler) => handler(typeof input === 'string' ? Number(input) : input),
         };
         expect(new SchemaValidator(schema).validateModel('3')).toBe(3);
@@ -45,7 +45,7 @@ describe('function wrappers', () => {
     it('uses default-factory for missing values', () => {
         const schema: BaseSchema = {
             type: 'default-factory',
-            schema: { type: 'list', itemsSchema: { type: 'string' } },
+            schema: { type: 'array', itemsSchema: { type: 'string' } },
             factory: () => ['x'],
         };
         expect(new SchemaValidator(schema).validateModel(undefined)).toEqual(['x']);

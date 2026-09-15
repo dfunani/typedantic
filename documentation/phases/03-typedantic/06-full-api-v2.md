@@ -18,7 +18,7 @@ class Order extends BaseModel {
   @Field({ type: Array, items: String, minLength: 1 })
   tags!: string[];
 
-  @Field({ type: 'dict', values: Number, keys: String })
+  @Field({ type: 'object', values: Number, keys: String })
   scores!: Record<string, number>;
 
   @Field({ type: Address })
@@ -30,12 +30,12 @@ class Order extends BaseModel {
   @Field({ type: String, nullable: true })
   note!: string | null;
 
-  @Field({ type: 'float', ge: 0 })
+  @Field({ type: 'number', ge: 0 })
   rating!: number;
 }
 ```
 
-`Number` stays **integer** (`type: 'number'`). Use `type: 'float'` for fractions.
+`Number` stays **integer** (`type: 'int'`). Use `type: 'number'` for IEEE-754 fractions. JS has no `float`.
 
 ---
 
@@ -47,31 +47,31 @@ Add to the V1 `FieldInfo`:
 
 | Option | Emits |
 |--------|--------|
-| `items` | `list.itemsSchema` (with `type: Array` or `'list'`) |
-| `values` / `keys` | `dict` (also `type: 'dict'`) |
+| `items` | `array.itemsSchema` (with `type: Array` or `'array'`) |
+| `values` / `keys` | `object` (also `type: 'object'`) |
 | `enum` | `enum.members` |
 | `literal` | `literal.expected` |
 | `union` + `discriminator` | tagged or untagged `union` |
 | `nullable` | wrap in `{ type: 'nullable', schema }` |
 
-`minLength` / `maxLength` on an `Array` field apply to the **list**, not the item strings.
+`minLength` / `maxLength` on an `Array` field apply to the **array**, not the item strings.
 
 ---
 
-## Do not treat `Object` as a dict
+## Do not treat `Object` as an open object
 
 `emitDecoratorMetadata` reports `Object` for `Record<string, number>`, nested POJOs, and many generics.
 
-**Wrong:** `effective === Object` → `{ type: 'dict', valuesSchema: string }`  
-**Right:** emit `dict` only when the caller passed `type: 'dict'`, `values`, or `keys`.
+**Wrong:** `effective === Object` → `{ type: 'object', valuesSchema: string }`  
+**Right:** emit `object` only when the caller passed `type: 'object'`, `values`, or `keys`.
 
 ```ts
-if (effective === 'dict' || fieldInfo?.values !== undefined || fieldInfo?.keys !== undefined) {
-  return inferDictSchema(fieldInfo);
+if (effective === 'object' || fieldInfo?.values !== undefined || fieldInfo?.keys !== undefined) {
+  return inferObjectSchema(fieldInfo);
 }
 ```
 
-A bare `@Field({ type: Object })` must **not** become a string dict.
+A bare `@Field({ type: Object })` must **not** become a string-valued open object.
 
 Nested models: if `type` is a class with `modelValidate`, emit `buildModelFieldSchema(type)` (plain objects, not nested class instances — the core engine has no constructors).
 
@@ -108,23 +108,23 @@ function inferBaseSchema(type: unknown, fieldInfo?: FieldInfo): BaseSchema {
   const effective = fieldInfo?.type ?? type;
 
   if (effective === Date || effective === 'date') return { type: 'date' };
-  if (effective === Array || effective === 'list') {
+  if (effective === Array || effective === 'array') {
     return {
-      type: 'list',
+      type: 'array',
       itemsSchema: inferSchemaFromType(fieldInfo?.items ?? String),
       minLength: fieldInfo?.minLength,
       maxLength: fieldInfo?.maxLength,
     };
   }
-  if (effective === 'dict' || fieldInfo?.values !== undefined || fieldInfo?.keys !== undefined) {
+  if (effective === 'object' || fieldInfo?.values !== undefined || fieldInfo?.keys !== undefined) {
     return {
-      type: 'dict',
+      type: 'object',
       valuesSchema: inferSchemaFromType(fieldInfo?.values ?? String),
       keysSchema: fieldInfo?.keys ? inferSchemaFromType(fieldInfo.keys) : undefined,
     };
   }
-  if (effective === 'float') {
-    return getSchemaConstraints({ type: 'float' }, fieldInfo);
+  if (effective === 'number') {
+    return getSchemaConstraints({ type: 'number' }, fieldInfo);
   }
   if (isModelConstructor(effective)) {
     return buildModelFieldSchema(effective);
@@ -134,7 +134,7 @@ function inferBaseSchema(type: unknown, fieldInfo?: FieldInfo): BaseSchema {
 }
 ```
 
-`getSchemaConstraints` must apply `ge` / `multipleOf` to **both** `number` and `float`.
+`getSchemaConstraints` must apply `ge` / `multipleOf` to **both** `int` and `number`.
 
 `isModelConstructor` excludes `String` / `Number` / `Boolean` / `Date` / `Array` / `Object` and requires `modelValidate`.
 

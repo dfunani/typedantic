@@ -7,8 +7,8 @@
 | `modelDumpJson` | Skips computed/serializers | `JSON.stringify(this.modelDump({mode:'json'}))` |
 | Discriminator | Falls back to open union | Unknown tag → error |
 | JSON Schema pattern | `String(/re/)` | use `.source` |
-| Float `multipleOf` | Declared unused | Enforce |
-| Dict `keysSchema` | Declared unused | Validate keys |
+| `number` `multipleOf` | Declared unused | Enforce |
+| Object `keysSchema` | Declared unused | Validate keys |
 | Settings typing | Returns `BaseSettings` | `InstanceType<T>` |
 | Settings prefix | Aliases ignore prefix | Prefixed lookup |
 | Nested env | Flatten only | Rebuild nested objects |

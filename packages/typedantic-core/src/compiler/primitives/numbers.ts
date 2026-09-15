@@ -4,7 +4,7 @@ import { createValidationErrorDetail } from '../../factories/validation-error.js
 import { ValidationErrorDetailSchema } from '../../schema/models/configurations.js';
 import type { BaseSchema } from '../../schema/types.js';
 import type { ValidationContext, ValidatorFunction } from '../compile.js';
-import { parseNumber } from './utils.js';
+import { parseFloatNumber } from './utils.js';
 
 type NumberErrorContext = "type" | "greater_than_equal" | "greater_than" | "less_than_equal" | "less_than" | "multiple_of";
 
@@ -14,10 +14,10 @@ export function compileNumbers(schema: Extract<BaseSchema, { type: 'number' }>):
         const strict = schema.strict ?? ctx.config.strict;
 
         if (!strict) {
-            value = parseNumber(value);
+            value = parseFloatNumber(value);
         }
 
-        if (typeof value !== 'number' || !Number.isInteger(value)) {
+        if (typeof value !== 'number' || Number.isNaN(value)) {
             ctx.errors.push(createNumberError(value, ctx, "type", value, strict));
             return undefined;
         }
@@ -34,12 +34,17 @@ export function compileNumbers(schema: Extract<BaseSchema, { type: 'number' }>):
         if (schema.lt !== undefined && value >= schema.lt) {
             ctx.errors.push(createNumberError(value, ctx, "less_than", schema.lt, strict, { lt: schema.lt }));
         }
-        if (schema.multipleOf !== undefined && value % schema.multipleOf !== 0) {
+        if (schema.multipleOf !== undefined && schema.multipleOf !== 0 && !isMultipleOf(value, schema.multipleOf)) {
             ctx.errors.push(createNumberError(value, ctx, "multiple_of", schema.multipleOf, strict, { multipleOf: schema.multipleOf }));
         }
 
         return value;
     };
+}
+
+export function isMultipleOf(value: number, multipleOf: number): boolean {
+    const quotient = value / multipleOf;
+    return Math.abs(quotient - Math.round(quotient)) < 1e-9;
 }
 
 function createNumberError(

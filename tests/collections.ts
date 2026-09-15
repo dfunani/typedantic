@@ -6,7 +6,7 @@ class TagList extends BaseModel {
     @Field({ type: Array, items: String, minLength: 1, maxLength: 3 })
     tags!: string[];
 
-    @Field({ type: 'dict', values: Number, keys: String })
+    @Field({ type: 'object', values: Number, keys: String })
     scores!: Record<string, number>;
 }
 

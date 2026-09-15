@@ -15,7 +15,7 @@ Class + @Field metadata  →  CoreSchema  →  ValidatorFn  →  validated data
 | `int` | Integer | Yes |
 | `bool` / `str` | Boolean / string | Yes |
 | `model-fields` | Object with named fields | **Required for V1** |
-| `list`, `dict`, `union`, … | Collections / choices | V2 |
+| `array`, `object`, `union`, … | Collections / choices | V2 |
 
 > Main uses `bool`/`str`. Pick one convention and keep builder + compiler aligned.
 

@@ -19,7 +19,7 @@ Core is a **zero-dependency** validation engine.
 3. [03-compiler-v1.md](./03-compiler-v1.md) — int/bool/str + model-fields
 4. [04-schema-validator.md](./04-schema-validator.md)
 5. [05-tests-v1.md](./05-tests-v1.md)
-6. [06-full-engine-v2.md](./06-full-engine-v2.md) — list, dict, union, float, date, functions
+6. [06-full-engine-v2.md](./06-full-engine-v2.md) — array, object, union, int/number, date, functions
 7. [07-tests-v2.md](./07-tests-v2.md) — `packages/typedantic-core/tests/`
 
 Full `main` sources: [../../reference/](../../reference/)

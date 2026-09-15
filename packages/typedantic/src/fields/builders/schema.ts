@@ -1,4 +1,4 @@
-import { BaseSchema, NumbersSchema, StringSchema, FloatsSchema } from "@typedantic/core";
+import { BaseSchema, IntSchema, NumbersSchema, StringSchema } from "@typedantic/core";
 import type { FieldInfo, ModelFieldMeta } from "../types.js";
 import { getRegisteredFields } from "../properties.js";
 import { finalizeRegisteredFields } from "../registry.js";
@@ -16,7 +16,7 @@ export function getSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo):
     if (schema.type === 'string') {
         return buildStringSchemaConstraints(schema as StringSchema, fieldInfo);
     }
-    if (schema.type === 'number' || schema.type === 'float') {
+    if (schema.type === 'int' || schema.type === 'number') {
         return buildNumbersSchemaConstraints(schema, fieldInfo);
     }
     return schema;
@@ -24,14 +24,14 @@ export function getSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo):
 
 export function getBaseSchemaFromType(type: unknown, fieldInfo?: FieldInfo): BaseSchema {
     if (type === String || type === 'string') return { type: 'string' };
-    if (type === Number || type === 'number') return { type: 'number' }; // V1 choice: Number → int
+    if (type === Number || type === 'int') return { type: 'int' };
+    if (type === 'number') return { type: 'number' };
     if (type === Boolean || type === 'boolean') return { type: 'boolean' };
     if (type === Date || type === 'date') return { type: 'date' };
-    if (type === 'float') return { type: 'float' };
 
     if (!fieldInfo) return { type: 'string' };
 
-    if (isNumberConstraint(fieldInfo)) return { type: 'number' };
+    if (isNumberConstraint(fieldInfo)) return { type: 'int' };
     if (isStringConstraint(fieldInfo)) return { type: 'string' };
 
     return { type: 'string' };
@@ -58,8 +58,8 @@ function buildStringSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo)
     } as StringSchema;
 }
 
-function buildNumbersSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo): NumbersSchema | FloatsSchema {
-    if (!fieldInfo) return schema as NumbersSchema | FloatsSchema;
+function buildNumbersSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo): IntSchema | NumbersSchema {
+    if (!fieldInfo) return schema as IntSchema | NumbersSchema;
     return {
         ...schema,
         ge: fieldInfo.ge,
@@ -68,5 +68,5 @@ function buildNumbersSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo
         lt: fieldInfo.lt,
         multipleOf: fieldInfo.multipleOf,
         strict: fieldInfo.strict,
-    } as NumbersSchema | FloatsSchema;
+    } as IntSchema | NumbersSchema;
 }
