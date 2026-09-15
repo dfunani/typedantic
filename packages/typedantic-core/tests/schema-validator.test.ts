@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { SchemaValidator, ValidationError } from '../index.js';
-import type { BaseSchema } from '../schema/types.js';
+import { SchemaValidator, ValidationError } from '../src/index.js';
+import type { BaseSchema } from '../src/schema/types.js';
 
 describe('SchemaValidator V1', () => {
-    it('validates number with constraints', () => {
+    it('validates int with constraints', () => {
         const schema: BaseSchema = { type: 'number', ge: 0, le: 150 };
         const v = new SchemaValidator(schema);
         expect(v.validateModel(25)).toBe(25);
@@ -11,23 +11,23 @@ describe('SchemaValidator V1', () => {
         expect(() => v.validateModel(1.5)).toThrow(ValidationError);
     });
 
-    it('coerces string to int when not strict', () => {
+    it('coerces string to number when not strict', () => {
         const v = new SchemaValidator({ type: 'number' });
         expect(v.validateModel('42')).toBe(42);
     });
 
-    it('rejects string to int when strict', () => {
+    it('rejects string to number when strict', () => {
         const v = new SchemaValidator({ type: 'number', strict: true });
         expect(() => v.validateModel('42')).toThrow(ValidationError);
     });
 
-    it('validates str minLength', () => {
+    it('validates string minLength', () => {
         const v = new SchemaValidator({ type: 'string', minLength: 3 });
         expect(v.validateModel('abc')).toBe('abc');
         expect(() => v.validateModel('ab')).toThrow(ValidationError);
     });
 
-    it('validates bool coercion', () => {
+    it('validates boolean coercion', () => {
         const v = new SchemaValidator({ type: 'boolean' });
         expect(v.validateModel('true')).toBe(true);
         expect(v.validateModel(0)).toBe(false);
