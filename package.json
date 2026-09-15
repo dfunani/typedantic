@@ -12,6 +12,10 @@
         "typecheck": "turbo run typecheck",
         "clean": "turbo run clean"
     },
+    "dependencies": {
+        "typedantic": "workspace:*",
+        "typedantic-settings": "workspace:*"
+    },
     "devDependencies": {
         "@types/node": "^22.10.0",
         "reflect-metadata": "^0.2.2",

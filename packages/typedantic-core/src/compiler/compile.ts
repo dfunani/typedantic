@@ -1,17 +1,16 @@
 import type {
     BaseSchema,
-    ValidationConfig,
-    ValidationErrorDetail,
 } from '../schema/types.js';
-import { compileNumber } from './number.js';
-import { compileString } from './string.js';
-import { compileBoolean } from './boolean.js';
-import { compileModelFields } from './model-fields.js';
+import type { ValidationConfigSchema, ValidationErrorDetailSchema } from '../schema/models/configurations.js';
+import { compileNumbers } from './primitives/numbers.js';
+import { compileStrings } from './primitives/strings.js';
+import { compileBooleans } from './primitives/booleans.js';
+import { compileModelFields } from './fields/model-fields.js';
 
 export interface ValidationContext {
     path: (string | number)[];
-    config: ValidationConfig;
-    errors: ValidationErrorDetail[];
+    config: ValidationConfigSchema;
+    errors: ValidationErrorDetailSchema[];
 }
 
 export type ValidatorFunction = (input: unknown, ctx: ValidationContext) => unknown;
@@ -21,25 +20,37 @@ export type DecoratorValidatorFunction = (
     handler: (v: unknown) => unknown,
 ) => unknown;
 
+function createFieldValidators(schema: Extract<BaseSchema, { type: 'model-fields' }>): Record<string, ValidatorFunction> {
+    const fieldValidators: Record<string, ValidatorFunction> = {};
+    for (const [name, field] of Object.entries(schema.fields)) {
+        fieldValidators[name] = compileValidator(field.schema);
+    }
+    return fieldValidators;
+}
+
+function createValidationError(input: unknown, ctx: ValidationContext): ValidationErrorDetailSchema {
+    return {
+        type: 'unknown_schema',
+        location: [...ctx.path],
+        message: 'Unknown schema type',
+        input,
+    };
+}
 
 export function compileValidator(schema: BaseSchema): ValidatorFunction {
     switch (schema.type) {
         case 'number':
-            return compileNumber(schema);
+            return compileNumbers(schema);
         case 'string':
-            return compileString(schema);
+            return compileStrings(schema);
         case 'boolean':
-            return compileBoolean(schema);
+            return compileBooleans(schema);
         case 'model-fields':
-            return compileModelFields(schema);
+            const fieldValidators = createFieldValidators(schema);
+            return compileModelFields(schema, fieldValidators);
         default: {
             return (input, ctx) => {
-                ctx.errors.push({
-                    type: 'unknown_schema',
-                    loc: [...ctx.path],
-                    msg: 'Unknown schema type',
-                    input,
-                });
+                ctx.errors.push(createValidationError(input, ctx));
                 return undefined;
             };
         }
