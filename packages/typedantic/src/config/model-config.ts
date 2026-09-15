@@ -1,13 +1,10 @@
-import { defineFieldPropertyMetadata } from "../fields/properties.js";
+import { defineFieldProperty, defineFieldPropertyMetadata } from "../fields/properties.js";
 import { MODEL_CONFIG_KEY, type ConfigDict } from "../fields/types.js";
 
 export function modelConfig(config: ConfigDict): ClassDecorator {
     return (target) => {
-        Object.defineProperty(target, 'modelConfig', {
-            value: { ...(target as { modelConfig?: ConfigDict }).modelConfig, ...config },
-            writable: true,
-            configurable: true,
-        });
+        const propertyValue = { ...(target as { modelConfig?: ConfigDict }).modelConfig, ...config };
+        defineFieldProperty(target, 'modelConfig', propertyValue);
         defineFieldPropertyMetadata(MODEL_CONFIG_KEY, config, target);
     };
 }

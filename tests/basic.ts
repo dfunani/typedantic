@@ -1,9 +1,8 @@
 import 'reflect-metadata';
-import { BaseModel, Field, modelConfig } from '../packages/typedantic/src/index.js';
-
-@modelConfig({ extra: 'forbid' })
+import { BaseModel, Field, modelConfig } from 'typedantic';
+@modelConfig({ extra: 'ignore' })
 class Test extends BaseModel {
-    @Field({ type: Number, ge: 0 })
+    @Field({ type: Number, ge: 0, strict: false })
     flag!: number;
 
     @Field({ type: String, minLength: 1 })
@@ -13,11 +12,12 @@ class Test extends BaseModel {
     active!: boolean;
 }
 
-const ok = Test.modelValidate({ flag: 10, name: 'Ada', active: true });
+const ok = Test.modelValidate({ flag: 10, name: 'Ada', active: true, extra_field: 'ignore' });
 console.log(ok.modelDump());
 
 try {
-    Test.modelValidate({ flag: 'nope', name: 'Ada', active: true });
+    const err = Test.modelValidate({ flag: '1', name: 'Ada', active: true });
+    console.log('expected error', err.modelDumpJson());
 } catch (e) {
     console.log('expected error', e);
 }

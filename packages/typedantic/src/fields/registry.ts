@@ -1,9 +1,6 @@
-import { BaseSchema } from "@typedantic/core";
-import { defineFieldPropertyMetadata, getFieldPropertyMetadata } from "./properties.js";
-import type { FieldInfo, ModelFieldMeta } from "./types.js";
-
-
-const MODEL_FIELDS_REGISTRY = Symbol('typedantic:fieldsRegistry');
+import { defineFieldProperty, defineFieldPropertyMetadata, getFieldPropertyMetadata, getRegisteredFields } from "./properties.js";
+import { FieldInfo, MODEL_FIELDS_REGISTRY, ModelFieldMeta } from "./types.js";
+import type { BaseSchema } from "@typedantic/core";
 
 export function registerModelField(ctor: Function, name: string, fieldInfo: FieldInfo): void {
     const registry = (getFieldPropertyMetadata(MODEL_FIELDS_REGISTRY, ctor) as Record<string, ModelFieldMeta>) ?? {};
@@ -20,16 +17,14 @@ export function registerModelField(ctor: Function, name: string, fieldInfo: Fiel
     };
 
     defineFieldPropertyMetadata(MODEL_FIELDS_REGISTRY, registry, ctor);
-    Object.defineProperty(ctor, 'modelFields', { value: registry, writable: true, configurable: true });
+    defineFieldProperty(ctor, 'modelFields', registry);
 }
 
-export function getRegisteredFields(ctor: Function): Record<string, ModelFieldMeta> {
-    return (getFieldPropertyMetadata(MODEL_FIELDS_REGISTRY, ctor) as Record<string, ModelFieldMeta>) ?? {};
-}
+
 
 export function finalizeRegisteredFields(
     ctor: Function,
-    buildSchema: (fieldInfo: FieldInfo | undefined, designType?: unknown) => BaseSchema,
+    buildSchema: (type: unknown, fieldInfo?: FieldInfo) => BaseSchema,
 ): Record<string, ModelFieldMeta> {
     const registry = getRegisteredFields(ctor);
     const prototype = ctor.prototype as object;
@@ -37,9 +32,10 @@ export function finalizeRegisteredFields(
     for (const [, meta] of Object.entries(registry)) {
         const designType = getFieldPropertyMetadata('design:type', prototype, meta.name);
         const fieldType = meta.fieldInfo?.type ?? (designType !== Object ? designType : undefined);
-        meta.schema = buildSchema(meta.fieldInfo, fieldType ?? String);
+        meta.schema = buildSchema(fieldType ?? String, meta.fieldInfo);
     }
 
-    Object.defineProperty(ctor, 'modelFields', { value: registry, writable: true, configurable: true });
+    defineFieldProperty(ctor, 'modelFields', registry);
     return registry;
 }
+

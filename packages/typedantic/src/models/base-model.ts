@@ -1,24 +1,24 @@
 import { getModelConfig } from "../config/model-config.js";
 import type { ConfigDict, ModelFieldMeta } from "../fields/types.js";
-import { getOrBuildSchema, getOrBuildValidator, instantiateModel } from "./factories.js";
+import { buildBaseModelSchema, buildBaseModelValidator, buildBaseModelInstance } from "./factories.js";
 
 export class BaseModel {
     static modelConfig: ConfigDict = {};
     static modelFields: Record<string, ModelFieldMeta> = {};
 
     static modelValidate<T extends typeof BaseModel>(this: T, data: unknown): InstanceType<T> {
-        const schema = getOrBuildSchema(this);
-        const validator = getOrBuildValidator(this, schema);
+        const schema = buildBaseModelSchema(this);
+        const validator = buildBaseModelValidator(this, schema);
         const config = getModelConfig(this);
         const validated = validator.validateModel(data, { strict: config.strict });
-        return instantiateModel(this, validated as Record<string, unknown>);
+        return buildBaseModelInstance(this, validated as Record<string, unknown>);
     }
 
     static modelConstruct<T extends typeof BaseModel>(
         this: T,
         values: Record<string, unknown>,
     ): InstanceType<T> {
-        return instantiateModel(this, values);
+        return buildBaseModelInstance(this, values);
     }
 
     modelDump(): Record<string, unknown> {

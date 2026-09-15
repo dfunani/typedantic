@@ -61,7 +61,12 @@ export function compileModelFields(
             for (const key of Object.keys(data)) {
                 const isAlias = Object.values(schema.fields).some((f) => f.alias === key);
                 if (!allowed.has(key) && !isAlias) {
-                    ctx.errors.push(createFieldError(data[key], ctx, "extra_forbidden", strict));
+                    const extraCtx: ValidationContext = {
+                        path: [...ctx.path, key],
+                        config: ctx.config,
+                        errors: ctx.errors,
+                    };
+                    ctx.errors.push(createFieldError(data[key], extraCtx, "extra_forbidden", strict));
                 }
             }
         } else if (extra === 'allow') {
