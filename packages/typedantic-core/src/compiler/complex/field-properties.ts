@@ -2,7 +2,7 @@ import { BaseSchema } from "../../schema/types.js";
 import { ValidatorFunction } from "../compile.js";
 
 
-export function compileUnions(schema: Extract<BaseSchema, { type: 'union' }>, validators: Record<string, ValidatorFunction>): ValidatorFunction {
+export function compileUnions(schema: Extract<BaseSchema, { type: 'union' }>, validators: ValidatorFunction[]): ValidatorFunction {
   return (input, ctx) => {
     if (schema.discriminator && typeof input === 'object' && input !== null) {
       const tag = (input as Record<string, unknown>)[schema.discriminator];
@@ -29,7 +29,7 @@ export function compileUnions(schema: Extract<BaseSchema, { type: 'union' }>, va
       }
     }
 
-    for (const validator of Object.values(validators)) {
+    for (const validator of validators) {
       const errorsBefore = ctx.errors.length;
       const result = validator(input, ctx);
       if (ctx.errors.length === errorsBefore) return result;
@@ -46,14 +46,14 @@ export function compileUnions(schema: Extract<BaseSchema, { type: 'union' }>, va
   };
 }
 
-export function compileNullables(schema: Extract<BaseSchema, { type: 'nullable' }>, validator: ValidatorFunction): ValidatorFunction {
+export function compileNullables(validator: ValidatorFunction): ValidatorFunction {
   return (input, ctx) => {
     if (input === null) return null;
     return validator(input, ctx);
   };
 }
 
-export function compileOptionals(schema: Extract<BaseSchema, { type: 'optional' }>, validator: ValidatorFunction): ValidatorFunction {
+export function compileOptionals(validator: ValidatorFunction): ValidatorFunction {
   return (input, ctx) => {
     if (input === undefined) return undefined;
     return validator(input, ctx);

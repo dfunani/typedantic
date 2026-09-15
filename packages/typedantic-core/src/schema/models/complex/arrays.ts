@@ -1,6 +1,4 @@
-import { DecoratorValidatorFunction, ValidatorFunction } from "../../../compiler/compile.js";
 import { BaseSchema } from "../../types.js";
-import { ModelFieldSchema } from "../fields.js";
 
 export interface ArraysSchema {
     type: 'list';

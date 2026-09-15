@@ -5,6 +5,7 @@ export interface SettingsConfigDict extends ConfigDict {
     envFile?: string | false;
     envNestedDelimiter?: string;
     caseSensitive?: boolean;
+    populateByName?: boolean;
 }
 
 

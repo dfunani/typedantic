@@ -1,8 +1,7 @@
-import { BaseSchema } from "../../schema/types.js";
 import { ValidatorFunction } from "../compile.js";
 
 
-export function compileObjects(schema: Extract<BaseSchema, { type: 'dict' }>, valueValidator: ValidatorFunction): ValidatorFunction {
+export function compileObjects(valueValidator: ValidatorFunction): ValidatorFunction {
     return (input, ctx) => {
         if (typeof input !== 'object' || input === null || Array.isArray(input)) {
             ctx.errors.push({

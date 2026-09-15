@@ -2,7 +2,7 @@ import { ValidatorFunction } from "../compile.js";
 
 
 
-export function compileDates(schema: Extract<BaseSchema, { type: 'date' }>): ValidatorFunction {
+export function compileDates(): ValidatorFunction {
   return (input, ctx) => {
     if (input instanceof Date) return input;
     if (typeof input === 'string' || typeof input === 'number') {

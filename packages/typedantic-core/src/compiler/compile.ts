@@ -58,15 +58,15 @@ export function compileValidator(schema: BaseSchema): ValidatorFunction {
         case 'enum':
             return compileEnums(schema);
         case 'list':
-            return compileArrays(schema, compileValidator(schema.itemSchema));
+            return compileArrays(schema, compileValidator(schema.itemsSchema));
         case 'dict':
-            return compileObjects(schema, compileValidator(schema.valuesSchema));
+            return compileObjects(compileValidator(schema.valuesSchema));
         case 'union':
-            return compileUnions(schema, createFieldValidators(schema));
+            return compileUnions(schema, schema.choices.map(compileValidator));
         case 'nullable':
-            return compileNullables(schema, compileValidator(schema.schema));
+            return compileNullables(compileValidator(schema.schema));
         case 'optional':
-            return compileOptionals(schema, compileValidator(schema.schema));
+            return compileOptionals(compileValidator(schema.schema));
         case 'default':
             return compileDefaults(schema, compileValidator(schema.schema));
         case 'default-factory':
@@ -78,9 +78,9 @@ export function compileValidator(schema: BaseSchema): ValidatorFunction {
         case 'function-wrap':
             return compileFunctionWrap(schema, compileValidator(schema.schema));
         case 'function-plain':
-            return compileFunctionPlain(schema, compileValidator(schema.schema));
+            return compileFunctionPlain(schema);
         case 'date':
-            return compileDates(schema);
+            return compileDates();
         case 'model-fields':
             const fieldValidators = createFieldValidators(schema);
             return compileModelFields(schema, fieldValidators);
