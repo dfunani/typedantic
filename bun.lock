@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "typedantic-monorepo",
+      "dependencies": {
+        "typedantic": "workspace:*",
+      },
       "devDependencies": {
         "@types/node": "^22.10.0",
         "reflect-metadata": "^0.2.2",

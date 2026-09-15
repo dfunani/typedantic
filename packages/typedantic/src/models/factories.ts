@@ -1,22 +1,24 @@
 import { BaseSchema, SchemaValidator } from "@typedantic/core";
-import { buildModelSchema, collectModelFields } from "../schema/builder.js";
 import { getModelConfig } from "../config/model-config.js";
+import { CORE_SCHEMA_KEY, ModelClass, VALIDATOR_KEY } from "../fields/types.js";
+import { buildModelFieldSchema } from "../fields/builders/fields.js";
+import { getModelFields } from "../fields/builders/schema.js";
 
 function hasOwn(ctor: object, key: string | symbol): boolean {
     return Object.prototype.hasOwnProperty.call(ctor, key);
 }
 
-export function getOrBuildSchema(ctor: Function): BaseSchema {
+export function buildBaseModelSchema(ctor: Function): BaseSchema {
     if (hasOwn(ctor, CORE_SCHEMA_KEY)) {
         return (ctor as ModelClass)[CORE_SCHEMA_KEY]!;
     }
-    collectModelFields(ctor);
-    const schema = buildModelSchema(ctor);
+    getModelFields(ctor);
+    const schema = buildModelFieldSchema(ctor);
     Object.defineProperty(ctor, CORE_SCHEMA_KEY, { value: schema });
     return schema;
 }
 
-export function getOrBuildValidator(ctor: Function, schema: BaseSchema): SchemaValidator {
+export function buildBaseModelValidator(ctor: Function, schema: BaseSchema): SchemaValidator {
     if (hasOwn(ctor, VALIDATOR_KEY)) {
         return (ctor as ModelClass)[VALIDATOR_KEY]!;
     }
@@ -26,7 +28,7 @@ export function getOrBuildValidator(ctor: Function, schema: BaseSchema): SchemaV
     return validator;
 }
 
-export function instantiateModel<T extends new (...args: unknown[]) => object>(
+export function buildBaseModelInstance<T extends new (...args: unknown[]) => object>(
     ctor: ModelClass<T>,
     data: Record<string, unknown>,
 ): InstanceType<T> {
