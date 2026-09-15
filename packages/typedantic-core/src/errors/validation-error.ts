@@ -1,34 +1,22 @@
-import type { ValidationErrorDetail } from '../schema/types.js';
+import type { ValidationErrorDetailSchema } from '../schema/models/configurations.js';
+import { errorMessage } from './utils.js';
 
 export class ValidationError extends Error {
-  readonly errors: ValidationErrorDetail[];
+    readonly name = "ValidationError";
+    readonly errors: ValidationErrorDetailSchema[];
 
-  constructor(errors: ValidationErrorDetail[]) {
-    const msg = errors.map((e) => `${e.loc.join('.')}: ${e.msg}`).join('; ');
-    super(msg);
-    this.name = 'ValidationError';
-    this.errors = errors;
-  }
+    constructor(errors: ValidationErrorDetailSchema[]) {
+        super(errorMessage(errors));
+        this.errors = errors;
+    }
 
-  errorCount(): number {
-    return this.errors.length;
-  }
+    toJson(): string {
+        return JSON.stringify({ detail: this.errors });
+    }
 
-  json(): string {
-    return JSON.stringify({ detail: this.errors });
-  }
+    toObject(): { detail: ValidationErrorDetailSchema[] } {
+        return { detail: this.errors };
+    }
 
-  toJSON(): { detail: ValidationErrorDetail[] } {
-    return { detail: this.errors };
-  }
-}
 
-export function createError(
-  type: string,
-  loc: (string | number)[],
-  msg: string,
-  input: unknown,
-  ctx?: Record<string, unknown>,
-): ValidationErrorDetail {
-  return { type, loc, msg, input, ...(ctx ? { ctx } : {}) };
 }

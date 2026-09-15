@@ -1,34 +1,31 @@
 {
-  "name": "typedantic-settings",
-  "version": "0.1.0",
-  "description": "Settings management for Typedantic — load config from environment variables",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": ["dist"],
-  "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  },
-  "keywords": ["settings", "env", "pydantic", "typedantic", "configuration"],
-  "license": "MIT",
-  "engines": {
-    "node": ">=20"
-  },
-  "dependencies": {
-    "typedantic": "workspace:*"
-  },
-  "devDependencies": {
-    "typedantic": "workspace:*"
-  },
-  "peerDependencies": {
-    "reflect-metadata": ">=0.2.0"
-  }
+    "name": "typedantic-settings",
+    "version": "0.1.0",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts --clean",
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "typedantic": "workspace:*"
+    },
+    "peerDependencies": {
+        "reflect-metadata": ">=0.2.0"
+    },
+    "engines": {
+        "node": ">=20"
+    },
+    "license": "MIT"
 }
