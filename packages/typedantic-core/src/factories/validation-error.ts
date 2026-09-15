@@ -1,20 +1,21 @@
-import type { BaseSchema, ValidationErrorDetail, ValidationOptions } from '../schema/types.js';
-import { SchemaValidator } from '../validator/schema-validator.js';
+import type { BaseSchema } from '../schema/types.js';
+import { SchemaValidator } from '../validator/schema.js';
+import type { ValidationErrorDetailSchema, ValidationOptionsSchema } from '../schema/models/configurations.js';
 
 export function createValidationErrorDetail(
     type: string,
-    loc: (string | number)[],
-    msg: string,
+    location: (string | number)[],
+    message: string,
     input: unknown,
-    ctx?: Record<string, unknown>,
-): ValidationErrorDetail {
-    return { type, loc, msg, input, ...(ctx ? { ctx } : {}) };
+    context?: Record<string, unknown>,
+): ValidationErrorDetailSchema {
+    return { type, location, message, input, ...(context ? { context } : {}) };
 }
 
 export function createSchemaValidator(
     schema: BaseSchema,
     input: unknown,
-    options?: ValidationOptions,
+    options?: ValidationOptionsSchema,
 ): unknown {
     return new SchemaValidator(schema, options).validateModel(input, options);
 }
