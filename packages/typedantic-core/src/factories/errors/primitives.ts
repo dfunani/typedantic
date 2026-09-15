@@ -6,6 +6,12 @@ export function createErrorDetails(): Record<string, Record<string, { name: stri
                 "message": "Input should be a valid boolean",
             }
         },
+        "literal": {
+            "type": {
+                "name": "literal_type",
+                "message": "Input should be a valid literal",
+            }
+        },
         "string": {
             "type": {
                 "name": "string_type",
@@ -49,6 +55,6 @@ export function createErrorDetails(): Record<string, Record<string, { name: stri
                 "name": "number_multiple_of",
                 "message": "Input should be a multiple of {placeholder}",
             },
-        }
+        },
     };
 }
