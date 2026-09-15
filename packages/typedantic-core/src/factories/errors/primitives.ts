@@ -9,8 +9,34 @@ export function createErrorDetails(): Record<string, Record<string, { name: stri
         "literal": {
             "type": {
                 "name": "literal_type",
-                "message": "Input should be a valid literal",
+                "message": "Input should be {placeholder}",
             }
+        },
+        "float": {
+            "type": {
+                "name": "float_type",
+                "message": "Input should be a valid number",
+            },
+            "greater_than_equal": {
+                "name": "float_greater_than_equal",
+                "message": "Input should be greater than or equal to {placeholder}",
+            },
+            "greater_than": {
+                "name": "float_greater_than",
+                "message": "Input should be greater than {placeholder}",
+            },
+            "less_than_equal": {
+                "name": "float_less_than_equal",
+                "message": "Input should be less than or equal to {placeholder}",
+            },
+            "less_than": {
+                "name": "float_less_than",
+                "message": "Input should be less than {placeholder}",
+            },
+            "multiple_of": {
+                "name": "float_multiple_of",
+                "message": "Input should be a multiple of {placeholder}",
+            },
         },
         "string": {
             "type": {

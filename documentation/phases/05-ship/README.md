@@ -6,7 +6,10 @@
 bun run build
 bun run test
 bun run typecheck
+bun run functional-test
 ```
+
+Unit tests live in `packages/<name>/tests/`. Functional scripts live in repo-root `tests/` and import built workspace packages.
 
 ```bash
 # pnpm

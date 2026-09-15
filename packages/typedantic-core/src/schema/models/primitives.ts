@@ -25,3 +25,21 @@ export interface LiteralSchema {
     type: 'literal';
     expected: unknown[];
 }
+
+export interface FloatsSchema {
+    type: 'float';
+    strict?: boolean;
+    ge?: number;
+    gt?: number;
+    le?: number;
+    lt?: number;
+    multipleOf?: number;
+}
+
+export interface AnySchema {
+    type: 'any';
+}
+
+export interface NeverSchema {
+    type: 'never';
+}

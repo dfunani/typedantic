@@ -1,4 +1,4 @@
-import { NumbersSchema, StringSchema, BooleanSchema, LiteralSchema } from "./models/primitives.js";
+import { NumbersSchema, StringSchema, BooleanSchema, LiteralSchema, FloatsSchema, AnySchema, NeverSchema } from "./models/primitives.js";
 import { ModelFieldsSchema } from "./models/fields.js";
 import { ArraysSchema } from "./models/complex/arrays.js";
 import { DictSchema } from "./models/complex/objects.js";
@@ -14,7 +14,27 @@ import { FunctionPlainSchema } from "./models/complex/field-functions.js";
 import { DateSchema } from "./models/complex/dates.js";
 import { EnumsSchema } from "./models/complex/enums.js";
 
-/** V1 union — expand in V2 */
-export type BaseSchema = NumbersSchema | StringSchema | BooleanSchema | LiteralSchema | EnumsSchema | ModelFieldsSchema | ArraysSchema | DictSchema | UnionSchema | NullableSchema | OptionalSchema | DefaultSchema | DefaultFactorySchema | FunctionBeforeSchema | FunctionAfterSchema | FunctionWrapSchema | FunctionPlainSchema | DateSchema;
+export type BaseSchema =
+    | NumbersSchema
+    | FloatsSchema
+    | StringSchema
+    | BooleanSchema
+    | LiteralSchema
+    | EnumsSchema
+    | ModelFieldsSchema
+    | ArraysSchema
+    | DictSchema
+    | UnionSchema
+    | NullableSchema
+    | OptionalSchema
+    | DefaultSchema
+    | DefaultFactorySchema
+    | FunctionBeforeSchema
+    | FunctionAfterSchema
+    | FunctionWrapSchema
+    | FunctionPlainSchema
+    | DateSchema
+    | AnySchema
+    | NeverSchema;
 
 

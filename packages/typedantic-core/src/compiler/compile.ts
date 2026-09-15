@@ -3,6 +3,7 @@ import type {
 } from '../schema/types.js';
 import type { ValidationConfigSchema, ValidationErrorDetailSchema } from '../schema/models/configurations.js';
 import { compileNumbers } from './primitives/numbers.js';
+import { compileFloats } from './primitives/floats.js';
 import { compileStrings } from './primitives/strings.js';
 import { compileBooleans } from './primitives/booleans.js';
 import { compileModelFields } from './fields/model-fields.js';
@@ -49,18 +50,23 @@ export function compileValidator(schema: BaseSchema): ValidatorFunction {
     switch (schema.type) {
         case 'number':
             return compileNumbers(schema);
+        case 'float':
+            return compileFloats(schema);
         case 'string':
             return compileStrings(schema);
         case 'boolean':
             return compileBooleans(schema);
-        case "literal":
+        case 'literal':
             return compileLiterals(schema);
         case 'enum':
             return compileEnums(schema);
         case 'list':
             return compileArrays(schema, compileValidator(schema.itemsSchema));
         case 'dict':
-            return compileObjects(compileValidator(schema.valuesSchema));
+            return compileObjects(
+                compileValidator(schema.valuesSchema),
+                schema.keysSchema ? compileValidator(schema.keysSchema) : undefined,
+            );
         case 'union':
             return compileUnions(schema, schema.choices.map(compileValidator));
         case 'nullable':
@@ -81,6 +87,18 @@ export function compileValidator(schema: BaseSchema): ValidatorFunction {
             return compileFunctionPlain(schema);
         case 'date':
             return compileDates();
+        case 'any':
+            return (input) => input;
+        case 'never':
+            return (input, ctx) => {
+                ctx.errors.push({
+                    type: 'never',
+                    location: [...ctx.path],
+                    message: 'Input is never valid',
+                    input,
+                });
+                return undefined;
+            };
         case 'model-fields':
             const fieldValidators = createFieldValidators(schema);
             return compileModelFields(schema, fieldValidators);

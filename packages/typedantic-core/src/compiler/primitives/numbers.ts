@@ -1,4 +1,5 @@
 import { createErrorDetails } from '../../factories/errors/primitives.js';
+import { interpolatePlaceholder } from '../../factories/errors/interpolate.js';
 import { createValidationErrorDetail } from '../../factories/validation-error.js';
 import { ValidationErrorDetailSchema } from '../../schema/models/configurations.js';
 import type { BaseSchema } from '../../schema/types.js';
@@ -17,40 +18,39 @@ export function compileNumbers(schema: Extract<BaseSchema, { type: 'number' }>):
         }
 
         if (typeof value !== 'number' || !Number.isInteger(value)) {
-            const error = createNumberError(value, ctx, "type", strict);
-            ctx.errors.push(error);
+            ctx.errors.push(createNumberError(value, ctx, "type", value, strict));
             return undefined;
         }
 
         if (schema.ge !== undefined && value < schema.ge) {
-            const error = createNumberError(value, ctx, "greater_than_equal", strict);
-            ctx.errors.push(error);
+            ctx.errors.push(createNumberError(value, ctx, "greater_than_equal", schema.ge, strict, { ge: schema.ge }));
         }
         if (schema.gt !== undefined && value <= schema.gt) {
-            const error = createNumberError(value, ctx, "greater_than", strict);
-            ctx.errors.push(error);
+            ctx.errors.push(createNumberError(value, ctx, "greater_than", schema.gt, strict, { gt: schema.gt }));
         }
         if (schema.le !== undefined && value > schema.le) {
-            const error = createNumberError(value, ctx, "less_than_equal", strict);
-            ctx.errors.push(error);
+            ctx.errors.push(createNumberError(value, ctx, "less_than_equal", schema.le, strict, { le: schema.le }));
         }
         if (schema.lt !== undefined && value >= schema.lt) {
-            const error = createNumberError(value, ctx, "less_than", strict);
-            ctx.errors.push(error);
+            ctx.errors.push(createNumberError(value, ctx, "less_than", schema.lt, strict, { lt: schema.lt }));
         }
         if (schema.multipleOf !== undefined && value % schema.multipleOf !== 0) {
-            const error = createNumberError(value, ctx, "multiple_of", strict);
-            ctx.errors.push(error);
+            ctx.errors.push(createNumberError(value, ctx, "multiple_of", schema.multipleOf, strict, { multipleOf: schema.multipleOf }));
         }
 
         return value;
     };
 }
 
-function createNumberError(value: unknown, ctx: ValidationContext, errorContext: NumberErrorContext, strict?: boolean): ValidationErrorDetailSchema {
-    const errorDetails = createErrorDetails();
-    const errorDetail = errorDetails.number[errorContext];
-    const errorType = errorDetail.name;
-    const errorMessage = errorDetail.message.replace('{placeholder}', value as string);
-    return createValidationErrorDetail(errorType, [...ctx.path], errorMessage, value, { strict });
+function createNumberError(
+    value: unknown,
+    ctx: ValidationContext,
+    errorContext: NumberErrorContext,
+    placeholder: unknown,
+    strict?: boolean,
+    extra?: Record<string, unknown>,
+): ValidationErrorDetailSchema {
+    const errorDetail = createErrorDetails().number[errorContext];
+    const errorMessage = interpolatePlaceholder(errorDetail.message, placeholder);
+    return createValidationErrorDetail(errorDetail.name, [...ctx.path], errorMessage, value, { strict, ...extra });
 }

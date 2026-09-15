@@ -6,7 +6,3 @@ export interface ArraysSchema {
     minLength?: number;
     maxLength?: number;
 }
-
-export interface DateSchema {
-    type: 'date';
-}

@@ -56,8 +56,11 @@ function inferBaseSchema(type: unknown, fieldInfo?: FieldInfo): BaseSchema {
     if (effective === Array || effective === 'list') {
         return inferListSchema(fieldInfo);
     }
-    if (effective === Object || effective === 'dict') {
+    if (effective === 'dict' || fieldInfo?.values !== undefined || fieldInfo?.keys !== undefined) {
         return inferDictSchema(fieldInfo);
+    }
+    if (effective === 'float') {
+        return getSchemaConstraints({ type: 'float' }, fieldInfo);
     }
     if (isModelConstructor(effective)) {
         return buildModelFieldSchema(effective);

@@ -37,13 +37,14 @@ export class SchemaValidator {
 
     validateJson(json: string, config?: ValidationConfigSchema): unknown {
         const strict = config?.strict ?? this.config.strict;
+        let parsed: unknown;
         try {
-            const parsed = JSON.parse(json);
-            return this.validateModel(parsed, config);
+            parsed = JSON.parse(json);
         } catch {
             const error = createValidationErrorDetail('json_invalid', [], 'Invalid JSON', json, { strict });
             throw new ValidationError([error]);
         }
+        return this.validateModel(parsed, config);
     }
 
     getErrors(): ValidationErrorDetailSchema[] {

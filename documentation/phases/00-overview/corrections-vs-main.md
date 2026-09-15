@@ -12,7 +12,7 @@
 | Settings typing | Returns `BaseSettings` | `InstanceType<T>` |
 | Settings prefix | Aliases ignore prefix | Prefixed lookup |
 | Nested env | Flatten only | Rebuild nested objects |
-| Mutable defaults | `default: []` shared | Prefer `defaultFactory` |
+| Mutable defaults | Shared `default: []` | Clone on apply; prefer `defaultFactory` |
 | CI | Incomplete workflow | Full workflow file |
 
 When reading [reference/](../../reference/) copies of `main`, apply these corrections as noted in phase chapters.

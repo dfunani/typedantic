@@ -57,4 +57,33 @@ describe('SchemaValidator V1', () => {
             v.validateModel({ name: 'Ada', age: 1, active: true, extra: 1 }),
         ).toThrow(ValidationError);
     });
+
+    it('does not treat failed validateModel as invalid JSON', () => {
+        const v = new SchemaValidator({ type: 'number', ge: 0 });
+        expect(() => v.validateJson('1')).not.toThrow();
+        try {
+            v.validateJson('-1');
+            throw new Error('expected ValidationError');
+        } catch (error) {
+            expect(error).toBeInstanceOf(ValidationError);
+            expect((error as ValidationError).errors[0].type).not.toBe('json_invalid');
+        }
+    });
+
+    it('rejects malformed JSON as json_invalid', () => {
+        const v = new SchemaValidator({ type: 'number' });
+        try {
+            v.validateJson('{');
+            throw new Error('expected ValidationError');
+        } catch (error) {
+            expect(error).toBeInstanceOf(ValidationError);
+            expect((error as ValidationError).errors[0].type).toBe('json_invalid');
+        }
+    });
+
+    it('resets errors between successful calls after a failure', () => {
+        const v = new SchemaValidator({ type: 'number', ge: 0 });
+        expect(() => v.validateModel(-1)).toThrow(ValidationError);
+        expect(v.validateModel(2)).toBe(2);
+    });
 });

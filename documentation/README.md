@@ -21,6 +21,7 @@ If you only read one file, start here: **[tutorial.md](./tutorial.md)** (linear 
 | Deep dive: reflect-metadata | [topics/reflect-metadata.md](./topics/reflect-metadata.md) |
 | Deep dive: decorators | [topics/decorators.md](./topics/decorators.md) |
 | Deep dive: CoreSchema IR | [topics/core-schema-ir.md](./topics/core-schema-ir.md) |
+| Deep dive: complex Field options | [topics/complex-schemas.md](./topics/complex-schemas.md) |
 | Deep dive: ValidationError / 422 | [topics/validation-errors.md](./topics/validation-errors.md) |
 | Deep dive: workspaces & imports | [topics/workspaces-and-imports.md](./topics/workspaces-and-imports.md) |
 | Deep dive: NodeNext `.js` imports | [topics/nodenext-js-extensions.md](./topics/nodenext-js-extensions.md) |
@@ -60,9 +61,24 @@ console.log(u.modelDump());
 4. Typedantic: `reflect`, metadata, `@Field`, registry, schema builder, `BaseModel`
 5. Public `index.ts` + build so imports work
 
-### Milestone V2 — full engine
+### Milestone V2 — collections, unions, dates (this tree)
 
-Lists, dicts, unions, defaults, function wrappers, serializer, JSON Schema, TypeAdapter, computed fields, serializers, special types, settings.
+```ts
+@Field({ type: Array, items: Address })
+addresses!: Address[];
+
+@Field({ union: [Cat, Dog], discriminator: 'kind' })
+pet!: Cat | Dog;
+```
+
+**V2 must include:**
+
+1. Core: `list`, `dict` (+ `keysSchema`), `union` (strict discriminator), `literal`, `enum`, `date`, `float`, `nullable`, defaults, function wrappers
+2. Constraint messages interpolate **limits**, not inputs; missing-field `location` includes the name
+3. Field options: `items`, `values`/`keys`, `enum`, `literal`, `union`, `nullable`, `type: 'float'`
+4. Unit tests under `packages/*/tests/` and functional scripts under `tests/`
+
+Still later: JSON Schema, TypeAdapter, computed fields, field serializers.
 
 ---
 
@@ -105,4 +121,4 @@ Details: [phases/00-overview/corrections-vs-main.md](./phases/00-overview/correc
 4. Core V1 under `phases/02-core/`
 5. [reflect-metadata.md](./topics/reflect-metadata.md) then Field/Model chapters
 6. V1 smoke test
-7. Continue for V2
+7. Continue for V2 — [phases/02-core/06-full-engine-v2.md](./phases/02-core/06-full-engine-v2.md) then [phases/03-typedantic/06-full-api-v2.md](./phases/03-typedantic/06-full-api-v2.md)
