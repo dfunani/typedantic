@@ -11,11 +11,11 @@ export const MODEL_FIELDS_REGISTRY = Symbol('typedantic:fieldsRegistry');
 export interface FieldInfo<T = unknown> {
     /** Prefer explicit runtime type — Vitest often omits design:type */
     type?: unknown;
-    /** List item constructor or schema type (`Array` fields). */
+    /** Array item constructor or schema type (`Array` / `'array'` fields). */
     items?: unknown;
-    /** Dict value constructor or schema type (`Object` / `'dict'` fields). */
+    /** Open-object value constructor or schema type (`'object'` fields). */
     values?: unknown;
-    /** Dict key constructor or schema type. */
+    /** Open-object key constructor or schema type. */
     keys?: unknown;
     /** Closed string set → `enum` schema. */
     enum?: readonly string[];

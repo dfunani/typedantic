@@ -1,4 +1,5 @@
 import { createErrorDetails } from '../../factories/errors/primitives.js';
+import { interpolatePlaceholder } from '../../factories/errors/interpolate.js';
 import { createValidationErrorDetail } from '../../factories/validation-error.js';
 import { ValidationErrorDetailSchema } from '../../schema/models/configurations.js';
 import type { BaseSchema } from '../../schema/types.js';
@@ -17,26 +18,22 @@ export function compileStrings(schema: Extract<BaseSchema, { type: 'string' }>):
         }
 
         if (typeof value !== 'string') {
-            const error = createStringError(value, context, "type", strict);
-            context.errors.push(error);
+            context.errors.push(createStringError(value, context, "type", value, strict));
             return undefined;
         }
 
         if (schema.minLength !== undefined && value.length < schema.minLength) {
-            const error = createStringError(value, context, "min_length", strict);
-            context.errors.push(error);
+            context.errors.push(createStringError(value, context, "min_length", schema.minLength, strict, { minLength: schema.minLength }));
             return undefined;
         }
         if (schema.maxLength !== undefined && value.length > schema.maxLength) {
-            const error = createStringError(value, context, "max_length", strict);
-            context.errors.push(error);
+            context.errors.push(createStringError(value, context, "max_length", schema.maxLength, strict, { maxLength: schema.maxLength }));
             return undefined;
         }
         if (schema.pattern !== undefined) {
             const re = typeof schema.pattern === 'string' ? new RegExp(schema.pattern) : schema.pattern;
             if (!re.test(value)) {
-                const error = createStringError(value, context, "pattern", strict);
-                context.errors.push(error);
+                context.errors.push(createStringError(value, context, "pattern", re.source, strict, { pattern: re.source }));
                 return undefined;
             }
         }
@@ -45,10 +42,15 @@ export function compileStrings(schema: Extract<BaseSchema, { type: 'string' }>):
     };
 }
 
-function createStringError(value: unknown, context: ValidationContext, errorContext: StringErrorContext, strict?: boolean): ValidationErrorDetailSchema {
-    const errorDetails = createErrorDetails();
-    const errorDetail = errorDetails.string[errorContext];
-    const errorType = errorDetail.name;
-    const errorMessage = errorDetail.message.replace('{placeholder}', value as string);
-    return createValidationErrorDetail(errorType, [...context.path], errorMessage, value, { strict });
+function createStringError(
+    value: unknown,
+    context: ValidationContext,
+    errorContext: StringErrorContext,
+    placeholder: unknown,
+    strict?: boolean,
+    extra?: Record<string, unknown>,
+): ValidationErrorDetailSchema {
+    const errorDetail = createErrorDetails().string[errorContext];
+    const errorMessage = interpolatePlaceholder(errorDetail.message, placeholder);
+    return createValidationErrorDetail(errorDetail.name, [...context.path], errorMessage, value, { strict, ...extra });
 }

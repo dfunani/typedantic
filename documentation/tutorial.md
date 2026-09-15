@@ -2,7 +2,7 @@
 
 This is the **linear path** to rebuild Typedantic from an empty folder.
 
-It is intentionally detailed for Milestone **V1** (int / bool / str + `BaseModel`), then points you into deeper phase docs for the rest of `main`.
+It is detailed for Milestone **V1** (int / bool / str + `BaseModel`), then a full **V2** how-to for collections, unions, dates, and Field options.
 
 **Doc hub:** [README.md](./README.md)
 
@@ -195,18 +195,38 @@ If this works, **Milestone V1 is done.** You have a usable Typedantic subset.
 
 ## 6. Core + API V2
 
-Expand toward full `main`:
+This is a full how-to, same shape as V1: phase pages have the copy-paste, this file is the linear index.
 
-1. [phases/02-core/06-full-engine-v2.md](./phases/02-core/06-full-engine-v2.md)
-2. [phases/03-typedantic/06-full-api-v2.md](./phases/03-typedantic/06-full-api-v2.md)
-3. Apply [phases/00-overview/corrections-vs-main.md](./phases/00-overview/corrections-vs-main.md)
-4. Use [reference/](./reference/) as copy-paste sources (then fix)
+**Corrections vs `main` (do not skip):** [phases/00-overview/corrections-vs-main.md](./phases/00-overview/corrections-vs-main.md)
 
-Port main tests:
+### 6.1 Core engine
 
-- `packages/typedantic/src/models/base-model.test.ts`
-- `discriminated-union.test.ts`
-- `features.test.ts`
+| # | Chapter | Output |
+|---|---------|--------|
+| 1 | [phases/02-core/06-full-engine-v2.md](./phases/02-core/06-full-engine-v2.md) | array, object + keys, union (strict tag), int/number, date, functions |
+| 2 | [phases/02-core/07-tests-v2.md](./phases/02-core/07-tests-v2.md) | `packages/typedantic-core/tests/` |
+
+```bash
+bunx vitest run packages/typedantic-core
+```
+
+### 6.2 Public API
+
+| # | Chapter | Output |
+|---|---------|--------|
+| 1 | [phases/03-typedantic/06-full-api-v2.md](./phases/03-typedantic/06-full-api-v2.md) | Field `items` / `object` / `union` / `number` / `nullable` |
+| 2 | [phases/03-typedantic/07-tests-v2.md](./phases/03-typedantic/07-tests-v2.md) | package unit tests + root `tests/*.ts` |
+
+```bash
+bun run build
+bunx vitest run packages/typedantic
+bun tests/advanced.ts
+bun run functional-test
+```
+
+Deep dive: [topics/complex-schemas.md](./topics/complex-schemas.md)
+
+JSON Schema, TypeAdapter, computed fields, and field serializers are **not** in this V2 checkpoint. Use [reference/](./reference/) when you add them.
 
 ---
 
@@ -233,6 +253,7 @@ Includes CI workflow, publish order, troubleshooting, acceptance checklist.
 | reflect-metadata / reflect.ts | [topics/reflect-metadata.md](./topics/reflect-metadata.md) |
 | Decorators | [topics/decorators.md](./topics/decorators.md) |
 | CoreSchema IR | [topics/core-schema-ir.md](./topics/core-schema-ir.md) |
+| Complex Field options | [topics/complex-schemas.md](./topics/complex-schemas.md) |
 | ValidationError / 422 | [topics/validation-errors.md](./topics/validation-errors.md) |
 | Workspaces & imports | [topics/workspaces-and-imports.md](./topics/workspaces-and-imports.md) |
 | NodeNext `.js` extensions | [topics/nodenext-js-extensions.md](./topics/nodenext-js-extensions.md) |
@@ -251,8 +272,8 @@ documentation/
 ├── phases/
 │   ├── 00-overview/
 │   ├── 01-scaffold/
-│   ├── 02-core/              ← full code for V1 engine
-│   ├── 03-typedantic/        ← full code for V1 BaseModel
+│   ├── 02-core/              ← V1 engine + V2 compiler how-to
+│   ├── 03-typedantic/        ← V1 BaseModel + V2 Field how-to
 │   ├── 04-settings/
 │   └── 05-ship/
 └── reference/                ← verbatim main sources as .md

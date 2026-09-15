@@ -1,12 +1,8 @@
 import { BaseSchema } from "../../types.js";
 
-export interface ArraysSchema {
-    type: 'list';
+export interface ArraySchema {
+    type: 'array';
     itemsSchema: BaseSchema;
     minLength?: number;
     maxLength?: number;
-}
-
-export interface DateSchema {
-    type: 'date';
 }

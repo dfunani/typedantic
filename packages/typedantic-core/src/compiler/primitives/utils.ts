@@ -23,3 +23,14 @@ export function parseNumber(value: unknown): unknown {
 
     return value;
 }
+
+export function parseFloatNumber(value: unknown): unknown {
+    if (typeof value !== 'string') return value;
+
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed)) {
+        return parsed;
+    }
+
+    return value;
+}

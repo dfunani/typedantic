@@ -3,6 +3,7 @@ import { createValidationErrorDetail } from '../../factories/validation-error.js
 import { ValidationErrorDetailSchema } from '../../schema/models/configurations.js';
 import type { BaseSchema } from '../../schema/types.js';
 import type { ValidatorFunction, ValidationContext } from '../compile.js';
+import { cloneDefault } from '../complex/field-properties.js';
 
 type FieldErrorContext = "type" | "missing" | "extra_forbidden";
 
@@ -37,11 +38,16 @@ export function compileModelFields(
 
             if (!found) {
                 if (field.default !== undefined) {
-                    value = field.default;
+                    value = cloneDefault(field.default);
                 } else if (field.defaultFactory) {
                     value = field.defaultFactory();
                 } else if (field.required) {
-                    ctx.errors.push(createFieldError(input, ctx, "missing", strict));
+                    const missingCtx: ValidationContext = {
+                        path: [...ctx.path, name],
+                        config: ctx.config,
+                        errors: ctx.errors,
+                    };
+                    ctx.errors.push(createFieldError(input, missingCtx, "missing", strict));
                     continue;
                 } else {
                     continue;

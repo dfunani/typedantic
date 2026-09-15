@@ -1,11 +1,11 @@
 import { ValidationContext, ValidatorFunction } from "../compile.js";
 import { BaseSchema } from "../../schema/types.js";
 
-export function compileArrays(schema: Extract<BaseSchema, { type: 'list' }>, validator: ValidatorFunction): ValidatorFunction {
+export function compileArrays(schema: Extract<BaseSchema, { type: 'array' }>, validator: ValidatorFunction): ValidatorFunction {
   return (input, ctx) => {
     if (!Array.isArray(input)) {
       ctx.errors.push({
-        type: 'list_type',
+        type: 'array_type',
         location: [...ctx.path],
         message: 'Input should be a valid array',
         input,
@@ -17,7 +17,7 @@ export function compileArrays(schema: Extract<BaseSchema, { type: 'list' }>, val
       ctx.errors.push({
         type: 'too_short',
         location: [...ctx.path],
-        message: `List should have at least ${schema.minLength} items`,
+        message: `Array should have at least ${schema.minLength} items`,
         input,
       });
     }
@@ -25,7 +25,7 @@ export function compileArrays(schema: Extract<BaseSchema, { type: 'list' }>, val
       ctx.errors.push({
         type: 'too_long',
         location: [...ctx.path],
-        message: `List should have at most ${schema.maxLength} items`,
+        message: `Array should have at most ${schema.maxLength} items`,
         input,
       });
     }
