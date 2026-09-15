@@ -6,6 +6,7 @@
       "name": "typedantic-monorepo",
       "dependencies": {
         "typedantic": "workspace:*",
+        "typedantic-settings": "workspace:*",
       },
       "devDependencies": {
         "@types/node": "^22.10.0",

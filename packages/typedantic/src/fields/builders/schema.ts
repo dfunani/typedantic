@@ -1,5 +1,5 @@
 import { BaseSchema, NumbersSchema, StringSchema } from "@typedantic/core";
-import { ConfigDict, FieldInfo, ModelFieldMeta } from "../types.js";
+import type { FieldInfo, ModelFieldMeta } from "../types.js";
 import { getRegisteredFields } from "../properties.js";
 import { finalizeRegisteredFields } from "../registry.js";
 import { inferSchemaFromType } from "./fields.js";
