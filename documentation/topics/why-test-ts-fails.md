@@ -52,7 +52,7 @@ instantiateModel(Test, { flag: 10 })
 
 ```ts
 import 'reflect-metadata';
-import { BaseModel, Field } from 'typedantic';
+import { BaseModel, Field } from '@typedantic/model';
 
 class Test extends BaseModel {
   @Field({ type: Number })

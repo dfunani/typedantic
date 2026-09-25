@@ -15,8 +15,8 @@ If you only read one file, start here: **[tutorial.md](./tutorial.md)** (linear 
 | Understand the big picture | [phases/00-overview/architecture.md](./phases/00-overview/architecture.md) |
 | Scaffold the monorepo | [phases/01-scaffold/README.md](./phases/01-scaffold/README.md) |
 | Build `@typedantic/core` | [phases/02-core/README.md](./phases/02-core/README.md) |
-| Build `typedantic` (BaseModel) | [phases/03-typedantic/README.md](./phases/03-typedantic/README.md) |
-| Build settings | [phases/04-settings/README.md](./phases/04-settings/README.md) |
+| Build `@typedantic/model` (BaseModel) | [phases/03-typedantic/README.md](./phases/03-typedantic/README.md) |
+| Build `@typedantic/settings` | [phases/04-settings/README.md](./phases/04-settings/README.md) |
 | Test, CI, publish | [phases/05-ship/README.md](./phases/05-ship/README.md) |
 | Deep dive: reflect-metadata | [topics/reflect-metadata.md](./topics/reflect-metadata.md) |
 | Deep dive: decorators | [topics/decorators.md](./topics/decorators.md) |
@@ -36,7 +36,7 @@ If you only read one file, start here: **[tutorial.md](./tutorial.md)** (linear 
 
 ```ts
 import 'reflect-metadata';
-import { BaseModel, Field } from 'typedantic';
+import { BaseModel, Field } from '@typedantic/model';
 
 class User extends BaseModel {
   @Field({ type: String, minLength: 1 })
@@ -84,15 +84,15 @@ Still later: JSON Schema, TypeAdapter, computed fields, field serializers.
 
 ## Package map
 
-```
-typedantic-settings  →  typedantic  →  @typedantic/core
-```
+| Directory | npm name | Responsibility |
+|-----------|----------|----------------|
+| `packages/typedantic-core` | `@typedantic/core` | Schema IR, compiler, validator, errors (no decorators) |
+| `packages/typedantic` | `@typedantic/model` | `@Field`, `BaseModel`, schema builder (**DX layer**) |
+| `packages/typedantic-settings` | `@typedantic/settings` | `BaseSettings` env + `.env` loading |
 
-| Package | Responsibility |
-|---------|----------------|
-| `@typedantic/core` | Schema IR, compiler, validator, serializer, errors (no decorators) |
-| `typedantic` | `@Field`, `BaseModel`, schema builder, JSON Schema (**DX layer**) |
-| `typedantic-settings` | `BaseSettings` env + `.env` loading |
+```
+@typedantic/settings  →  @typedantic/model  →  @typedantic/core
+```
 
 ---
 

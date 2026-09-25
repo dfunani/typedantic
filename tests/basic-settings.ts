@@ -1,6 +1,6 @@
 import 'reflect-metadata';
-import { Field } from 'typedantic';
-import { BaseSettings, settingsConfig } from 'typedantic-settings';
+import { Field } from '@typedantic/model';
+import { BaseSettings, settingsConfig } from '@typedantic/settings';
 
 @settingsConfig({ caseSensitive: false, envFile: 'tests/test.env' })
 class AppSettings extends BaseSettings {

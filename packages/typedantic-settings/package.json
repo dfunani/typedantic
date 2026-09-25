@@ -1,6 +1,7 @@
 {
-    "name": "typedantic-settings",
+    "name": "@typedantic/settings",
     "version": "0.1.0",
+    "description": "Environment and .env backed settings for Typedantic BaseModel",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -11,15 +12,19 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "LICENSE",
+        "CHANGELOG.md"
     ],
+    "sideEffects": false,
     "scripts": {
         "build": "tsup src/index.ts --format esm --dts --clean",
         "typecheck": "tsc --noEmit",
-        "clean": "rm -rf dist"
+        "clean": "rm -rf dist",
+        "prepublishOnly": "bun run build"
     },
     "dependencies": {
-        "typedantic": "workspace:*"
+        "@typedantic/model": "workspace:*"
     },
     "peerDependencies": {
         "reflect-metadata": ">=0.2.0"
@@ -27,5 +32,26 @@
     "engines": {
         "node": ">=20"
     },
-    "license": "MIT"
+    "license": "MIT",
+    "author": "typedantic contributors",
+    "homepage": "https://github.com/dfunani/typedantic#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dfunani/typedantic.git",
+        "directory": "packages/typedantic-settings"
+    },
+    "bugs": {
+        "url": "https://github.com/dfunani/typedantic/issues"
+    },
+    "keywords": [
+        "settings",
+        "environment",
+        "dotenv",
+        "typescript",
+        "typedantic"
+    ],
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
+    }
 }
