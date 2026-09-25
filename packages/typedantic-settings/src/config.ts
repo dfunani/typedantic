@@ -1,4 +1,4 @@
-import type { ConfigDict } from 'typedantic';
+import type { ConfigDict } from '@typedantic/model';
 
 export interface SettingsConfigDict extends ConfigDict {
     envPrefix?: string;
@@ -7,6 +7,3 @@ export interface SettingsConfigDict extends ConfigDict {
     caseSensitive?: boolean;
     populateByName?: boolean;
 }
-
-
-

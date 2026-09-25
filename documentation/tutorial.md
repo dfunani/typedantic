@@ -18,7 +18,7 @@ It is detailed for Milestone **V1** (int / bool / str + `BaseModel`), then a ful
 
 ```ts
 import 'reflect-metadata';
-import { BaseModel, Field, modelConfig } from 'typedantic';
+import { BaseModel, Field, modelConfig } from '@typedantic/model';
 
 @modelConfig({ extra: 'forbid' })
 class User extends BaseModel {
@@ -167,7 +167,7 @@ Replace root `test.ts` with:
 
 ```ts
 import 'reflect-metadata';
-import { BaseModel, Field, modelConfig } from 'typedantic';
+import { BaseModel, Field, modelConfig } from '@typedantic/model';
 
 @modelConfig({ extra: 'forbid' })
 class Test extends BaseModel {

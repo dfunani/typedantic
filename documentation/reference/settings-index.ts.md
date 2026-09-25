@@ -5,8 +5,8 @@ Copied from `main`: `packages/typedantic-settings/src/index.ts`
 ```typescript
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { BaseModel, Field, modelConfig, collectModelFields } from 'typedantic';
-import type { ConfigDict } from 'typedantic';
+import { BaseModel, Field, modelConfig, collectModelFields } from '@typedantic/model';
+import type { ConfigDict } from '@typedantic/model';
 
 export interface SettingsConfigDict extends ConfigDict {
   envPrefix?: string;
