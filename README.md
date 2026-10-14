@@ -126,6 +126,7 @@ First-ever publish is local once, then attach trusted publishers — see [distri
 
 | Audience | Start |
 |----------|--------|
+| Public site (guides / API) | sibling repo [`typedantic-web`](https://github.com/dfunani/typedantic-web) → typedantic.dev |
 | Rebuild from scratch | [documentation/tutorial.md](./documentation/tutorial.md) |
 | Doc hub | [documentation/](./documentation/) |
 | npm / release runbook | [distribution.md](./documentation/phases/05-ship/distribution.md) |
