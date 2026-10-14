@@ -1,13 +1,15 @@
-# Deep dive: `reflect.ts` and `reflect-metadata`
+# Deep dive: `fields/properties.ts` and `reflect-metadata`
 
-**File (main):** `packages/typedantic/src/internal/reflect.ts`  
+**File:** `packages/typedantic/src/fields/properties.ts`  
 **Related:** [decorators.md](./decorators.md), [../phases/03-typedantic/01-reflect-and-metadata.md](../phases/03-typedantic/01-reflect-and-metadata.md)
+
+There is no separate `internal/reflect.ts` in the current tree — metadata helpers live next to the field registry.
 
 ## What problem does it solve?
 
 TypeScript types (`string`, `number`) **erase at runtime**. After compile, a class has no knowledge that `name` is a string.
 
-Pydantic-for-TypeScript needs runtime type info to build a `CoreSchema`.  
+Typedantic needs runtime type info to build a `BaseSchema`.  
 `reflect-metadata` + `emitDecoratorMetadata` recovers a limited form of that info.
 
 ## What `emitDecoratorMetadata` emits
@@ -47,48 +49,20 @@ Reflect.getMetadata('design:type', User.prototype, 'age') // → Number
 
 **Rule:** always allow explicit `@Field({ type: String })` and prefer it in tests.
 
-## What `reflect.ts` is
+## What `properties.ts` provides
 
-A thin wrapper so the rest of the codebase does not call `Reflect.*` directly:
+Side-effect import loads the polyfill once, then thin wrappers:
 
 ```ts
 import 'reflect-metadata';
 
-type ReflectMetadata = {
-  getMetadata?(key: string | symbol, target: object, propertyKey?: string | symbol): unknown;
-  defineMetadata?(
-    key: string | symbol,
-    value: unknown,
-    target: object,
-    propertyKey?: string | symbol,
-  ): void;
-};
-
-const reflect = Reflect as ReflectMetadata;
-
-export function getMetadata(
-  key: string | symbol,
-  target: object,
-  propertyKey?: string | symbol,
-): unknown {
-  return reflect.getMetadata?.(key as string, target, propertyKey);
-}
-
-export function defineMetadata(
-  key: string | symbol,
-  value: unknown,
-  target: object,
-  propertyKey?: string | symbol,
-): void {
-  reflect.defineMetadata?.(key as string, value, target, propertyKey);
-}
+export function getFieldPropertyMetadata(key, target, propertyKey?): unknown;
+export function defineFieldPropertyMetadata(key, value, target, propertyKey?): void;
+export function getRegisteredFields(ctor): Record<string, ModelFieldMeta>;
+export function defineFieldProperty(ctor, name, value): void;
 ```
 
-### Why wrap?
-
-1. Side effect import loads the polyfill once
-2. Optional chaining if APIs missing
-3. Single place to swap storage later
+Optional chaining on `Reflect` keeps tests from crashing if metadata APIs are absent.
 
 ### Constructor vs prototype
 
@@ -97,13 +71,7 @@ export function defineMetadata(
 | Instance property/method | **prototype** |
 | Static method | **constructor** |
 
-Always normalize:
-
-```ts
-function ctorOf(target: object): Function {
-  return typeof target === 'function' ? target : target.constructor;
-}
-```
+Field registration normalizes to the **constructor** (`ctorOf`) so metadata and `MODEL_FIELDS_REGISTRY` stay on the class function, not the prototype.
 
 ## Where to learn more
 

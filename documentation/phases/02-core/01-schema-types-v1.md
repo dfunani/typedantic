@@ -1,93 +1,144 @@
-# Core V1 — Schema types (minimal IR)
+# 2.1 — Schema IR (V1)
 
-**Path:** `packages/typedantic-core/src/schema/types.ts`
+File: `packages/typedantic-core/src/schema/models/configurations.ts`  
+File: `packages/typedantic-core/src/schema/models/primitives.ts`  
+File: `packages/typedantic-core/src/schema/models/fields.ts`  
+File: `packages/typedantic-core/src/schema/types.ts`
 
-Start with only what V1 needs. You can later replace this file with the full main version from [../../reference/core-schema-types.ts.md](../../reference/core-schema-types.ts.md).
+The engine does not use classes for schemas. Every node is a plain object with a discriminant **`type`** string.
+
+## Validation config and error shape
+
+`packages/typedantic-core/src/schema/models/configurations.ts`:
 
 ```ts
-export type ValidatorFn = (value: unknown) => unknown;
-export type WrapValidatorFn = (
-  value: unknown,
-  handler: (v: unknown) => unknown,
-) => unknown;
+export interface ValidationConfigSchema {
+    strict?: boolean;
+}
+
+export interface ValidationErrorDetailSchema {
+    type: string;
+    location: (string | number)[];
+    message: string;
+    input: unknown;
+    context?: Record<string, unknown>;
+}
+
+export interface ValidationOptionsSchema {
+    strict?: boolean;
+}
+```
+
+Use **`location`** and **`message`** everywhere (API JSON uses the same keys via `ValidationError.toJson()` → `{ detail: [...] }`).
+
+## Primitives (V1)
+
+`packages/typedantic-core/src/schema/models/primitives.ts`:
+
+```ts
+export interface IntSchema {
+    type: 'int';
+    strict?: boolean;
+    ge?: number;
+    gt?: number;
+    le?: number;
+    lt?: number;
+    multipleOf?: number;
+}
+
+export interface NumbersSchema {
+    type: 'number';
+    strict?: boolean;
+    ge?: number;
+    gt?: number;
+    le?: number;
+    lt?: number;
+    multipleOf?: number;
+}
+
+export interface StringSchema {
+    type: 'string';
+    strict?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: RegExp | string;
+}
+
+export interface BooleanSchema {
+    type: 'boolean';
+    strict?: boolean;
+}
+```
+
+**Note:** `@typedantic/model` maps `Number` → `'int'` and explicit `type: 'number'` → `'number'`. Core treats them as separate compilers (`compileInts` vs `compileNumbers`).
+
+## Model object IR
+
+`packages/typedantic-core/src/schema/models/fields.ts`:
+
+```ts
+import type { BaseSchema } from '../types.js';
 
 export interface ModelFieldSchema {
-  schema: CoreSchema;
-  required: boolean;
-  alias?: string;
-  default?: unknown;
-  defaultFactory?: () => unknown;
-}
-
-export interface IntSchema {
-  type: 'int';
-  strict?: boolean;
-  ge?: number;
-  gt?: number;
-  le?: number;
-  lt?: number;
-  multipleOf?: number;
-}
-
-export interface StrSchema {
-  type: 'str';
-  strict?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: RegExp | string;
-}
-
-export interface BoolSchema {
-  type: 'bool';
-  strict?: boolean;
+    schema: BaseSchema;
+    required: boolean;
+    alias?: string;
+    default?: unknown;
+    defaultFactory?: () => unknown;
 }
 
 export interface ModelFieldsSchema {
-  type: 'model-fields';
-  fields: Record<string, ModelFieldSchema>;
-  modelName?: string;
-  extra?: 'ignore' | 'allow' | 'forbid';
-  strict?: boolean;
-}
-
-/** V1 union — expand in V2 */
-export type CoreSchema = IntSchema | StrSchema | BoolSchema | ModelFieldsSchema;
-
-export interface ValidationConfig {
-  strict?: boolean;
-}
-
-export interface ValidationErrorDetail {
-  type: string;
-  loc: (string | number)[];
-  msg: string;
-  input: unknown;
-  ctx?: Record<string, unknown>;
-}
-
-export interface ValidateOptions {
-  strict?: boolean;
-}
-
-export interface DumpOptions {
-  mode?: 'python' | 'json';
-  include?: Set<string>;
-  exclude?: Set<string>;
-  excludeUnset?: boolean;
-  excludeDefaults?: boolean;
-  excludeNone?: boolean;
-  byAlias?: boolean;
+    type: 'model-fields';
+    fields: Record<string, ModelFieldSchema>;
+    modelName?: string;
+    extra?: 'ignore' | 'allow' | 'forbid';
+    strict?: boolean;
 }
 ```
 
-### Why `str` / `bool` not `string` / `boolean`?
+## Minimal `BaseSchema` union (V1)
 
-Main uses short names matching pydantic-core vibes. Your schema builder must emit the **same** strings the compiler switches on.
+In `schema/types.ts`, start with:
 
-### Checkpoint
+```ts
+import type { IntSchema, NumbersSchema, StringSchema, BooleanSchema } from './models/primitives.js';
+import type { ModelFieldsSchema } from './models/fields.js';
 
-```bash
-bunx tsc -p packages/typedantic-core --noEmit
+export type BaseSchema =
+    | IntSchema
+    | NumbersSchema
+    | StringSchema
+    | BooleanSchema
+    | ModelFieldsSchema;
 ```
+
+As you complete [06-full-engine-v2.md](./06-full-engine-v2.md), extend this union with imports from `schema/models/complex/*` (arrays, unions, wrappers, etc.) until it matches the live file.
+
+## Example schemas
+
+```ts
+import type { BaseSchema } from '@typedantic/core';
+
+const age: BaseSchema = { type: 'int', ge: 0, le: 150 };
+
+const name: BaseSchema = { type: 'string', minLength: 1 };
+
+const user: BaseSchema = {
+    type: 'model-fields',
+    extra: 'ignore',
+    fields: {
+        name: { schema: { type: 'string', minLength: 1 }, required: true },
+        age: { schema: { type: 'int', ge: 0 }, required: true },
+        active: { schema: { type: 'boolean' }, required: true },
+    },
+};
+```
+
+## Checklist
+
+- [ ] `ValidationErrorDetailSchema` uses `location` / `message`
+- [ ] `ModelFieldSchema.schema` is recursive `BaseSchema`
+- [ ] V1 `BaseSchema` includes `model-fields`
+- [ ] Re-export schema types from `index.ts` as needed for consumers
 
 Next: [02-validation-error.md](./02-validation-error.md)

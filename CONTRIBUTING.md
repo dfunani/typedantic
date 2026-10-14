@@ -31,5 +31,8 @@ Always build in dependency order (Turbo handles this). Settings and functional t
 
 ## Publishing
 
-Maintainers only. See [documentation/phases/05-ship/README.md](./documentation/phases/05-ship/README.md).
-Publishing requires npm org access to `@typedantic` and the `NPM_TOKEN` secret for GitHub Actions.
+Maintainers only. Full runbook:
+
+→ [documentation/phases/05-ship/distribution.md](./documentation/phases/05-ship/distribution.md)
+
+Covers npm org `@typedantic`, local `npm login` profiles, granular `NPM_TOKEN`, GitHub Release / `publish:packages`, and how docs are distributed (GitHub curriculum + package READMEs).

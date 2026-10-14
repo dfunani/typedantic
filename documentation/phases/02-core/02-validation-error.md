@@ -1,76 +1,97 @@
-# Core — ValidationError
+# 2.2 — ValidationError
 
-**Path:** `packages/typedantic-core/src/errors/validation-error.ts`  
-Deep dive: [../../topics/validation-errors.md](../../topics/validation-errors.md)
+Files:
+
+- `packages/typedantic-core/src/errors/utils.ts`
+- `packages/typedantic-core/src/errors/validation-error.ts`
+- `packages/typedantic-core/src/factories/validation-error.ts`
+
+## Human-readable message
+
+`errors/utils.ts`:
 
 ```ts
-import type { ValidationErrorDetail } from '../schema/types.js';
+import type { ValidationErrorDetailSchema } from '../schema/models/configurations.js';
+
+export function errorMessage(errors: ValidationErrorDetailSchema[]): string {
+    return errors.map((e) => `${e.location.join('.')}: ${e.message}`).join('; ');
+}
+```
+
+Empty `location` → message starts at field name (root errors).
+
+## ValidationError class
+
+Match `packages/typedantic-core/src/errors/validation-error.ts`:
+
+```ts
+import type { ValidationErrorDetailSchema } from '../schema/models/configurations.js';
+import { errorMessage } from './utils.js';
 
 export class ValidationError extends Error {
-  readonly errors: ValidationErrorDetail[];
+    readonly name = 'ValidationError';
+    readonly errors: ValidationErrorDetailSchema[];
 
-  constructor(errors: ValidationErrorDetail[]) {
-    const msg = errors.map((e) => `${e.loc.join('.')}: ${e.msg}`).join('; ');
-    super(msg);
-    this.name = 'ValidationError';
-    this.errors = errors;
-  }
+    constructor(errors: ValidationErrorDetailSchema[]) {
+        super(errorMessage(errors));
+        this.errors = errors;
+    }
 
-  errorCount(): number {
-    return this.errors.length;
-  }
+    toJson(): string {
+        return JSON.stringify({ detail: this.errors });
+    }
 
-  /** FastAPI-compatible 422 body as JSON string: `{ "detail": [...] }` */
-  json(): string {
-    return JSON.stringify({ detail: this.errors });
-  }
-
-  toJSON(): { detail: ValidationErrorDetail[] } {
-    return { detail: this.errors };
-  }
-}
-
-export function createError(
-  type: string,
-  loc: (string | number)[],
-  msg: string,
-  input: unknown,
-  ctx?: Record<string, unknown>,
-): ValidationErrorDetail {
-  return { type, loc, msg, input, ...(ctx ? { ctx } : {}) };
+    toObject(): { detail: ValidationErrorDetailSchema[] } {
+        return { detail: this.errors };
+    }
 }
 ```
 
-### Test — `packages/typedantic-core/src/errors/validation-error.test.ts`
+**API shape:** `toJson()` parses to `{ detail: ValidationErrorDetailSchema[] }` with `location`, `message`, `type`, `input`, optional `context`. Do not use `loc` / `msg`.
+
+## Factory helper
+
+`factories/validation-error.ts`:
 
 ```ts
-import { describe, it, expect } from 'vitest';
-import { ValidationError, createError } from './validation-error.js';
+import type { ValidationErrorDetailSchema, ValidationOptionsSchema } from '../schema/models/configurations.js';
+import type { BaseSchema } from '../schema/types.js';
+import { SchemaValidator } from '../validator/schema.js';
 
-describe('ValidationError', () => {
-  it('formats and counts', () => {
-    const err = new ValidationError([
-      createError('missing', ['user', 'age'], 'Field required', {}),
-    ]);
-    expect(err.message).toContain('user.age: Field required');
-    expect(err.errorCount()).toBe(1);
-  });
+export function createValidationErrorDetail(
+    type: string,
+    location: (string | number)[],
+    message: string,
+    input: unknown,
+    context?: Record<string, unknown>,
+): ValidationErrorDetailSchema {
+    return { type, location, message, input, ...(context ? { context } : {}) };
+}
 
-  it('json() is FastAPI shaped', () => {
-    const err = new ValidationError([
-      createError('missing', ['name'], 'Field required', {}),
-    ]);
-    expect(JSON.parse(err.json())).toEqual({
-      detail: [
-        { type: 'missing', loc: ['name'], msg: 'Field required', input: {} },
-      ],
-    });
-  });
-});
+export function createSchemaValidator(
+    schema: BaseSchema,
+    input: unknown,
+    options?: ValidationOptionsSchema,
+): unknown {
+    return new SchemaValidator(schema, options).validateModel(input, options);
+}
 ```
 
-```bash
-bunx vitest run packages/typedantic-core/src/errors
+Compilers should push details via `createValidationErrorDetail` (or equivalent) so `type`, `location`, and `context.strict` stay consistent.
+
+## Quick test
+
+```ts
+import { ValidationError } from '../errors/validation-error.js';
+import { createValidationErrorDetail } from '../factories/validation-error.js';
+
+const err = new ValidationError([
+    createValidationErrorDetail('missing', ['user', 'age'], 'Field required', {}),
+]);
+console.log(err.message); // user.age: Field required
+console.log(JSON.parse(err.toJson()).detail[0].location); // ['user', 'age']
 ```
+
+Full tests: [05-tests-v1.md](./05-tests-v1.md) → `validation-error.test.ts`.
 
 Next: [03-compiler-v1.md](./03-compiler-v1.md)

@@ -1,56 +1,47 @@
-# Reference: field-registry.ts
+# `packages/typedantic/src/fields/registry.ts`
 
-Copied from `main`: `packages/typedantic/src/internal/field-registry.ts`
+**Package:** `@typedantic/model`  
+**Note:** Live source (0.1) — authoritative for rebuild. Prefer phase pages for teaching order.
 
-```typescript
-import type { FieldInfo, ModelFieldMeta } from './metadata.js';
-import { getMetadata, defineMetadata } from './reflect.js';
-
-const MODEL_FIELDS_REGISTRY = Symbol('typedantic:fieldsRegistry');
-
-function resolveFieldType(fieldInfo: FieldInfo | undefined, designType?: unknown): unknown {
-  if (fieldInfo?.type) return fieldInfo.type;
-  if (designType && designType !== Object) return designType;
-  return undefined;
-}
+```ts
+import { defineFieldProperty, defineFieldPropertyMetadata, getFieldPropertyMetadata, getRegisteredFields } from "./properties.js";
+import { FieldInfo, MODEL_FIELDS_REGISTRY, ModelFieldMeta } from "./types.js";
+import type { BaseSchema } from "@typedantic/core";
 
 export function registerModelField(ctor: Function, name: string, fieldInfo: FieldInfo): void {
-  const registry = (getMetadata(MODEL_FIELDS_REGISTRY, ctor) as Record<string, ModelFieldMeta>) ?? {};
-  const hasDefault = fieldInfo.default !== undefined || fieldInfo.defaultFactory !== undefined;
+    const registry = (getFieldPropertyMetadata(MODEL_FIELDS_REGISTRY, ctor) as Record<string, ModelFieldMeta>) ?? {};
+    const hasDefault = fieldInfo.default !== undefined || fieldInfo.defaultFactory !== undefined;
 
-  registry[name] = {
-    name,
-    fieldInfo,
-    schema: { type: 'any' },
-    required: !hasDefault,
-    alias: fieldInfo.alias,
-    default: fieldInfo.default,
-    defaultFactory: fieldInfo.defaultFactory,
-  };
+    registry[name] = {
+        name,
+        fieldInfo,
+        schema: { type: 'string' }, // temporary; finalized later
+        required: !hasDefault,
+        alias: fieldInfo.alias,
+        default: fieldInfo.default,
+        defaultFactory: fieldInfo.defaultFactory,
+    };
 
-  defineMetadata(MODEL_FIELDS_REGISTRY, registry, ctor);
-  Object.defineProperty(ctor, 'modelFields', { value: registry, writable: true, configurable: true });
+    defineFieldPropertyMetadata(MODEL_FIELDS_REGISTRY, registry, ctor);
+    defineFieldProperty(ctor, 'modelFields', registry);
 }
 
-export function getRegisteredFields(ctor: Function): Record<string, ModelFieldMeta> {
-  return (getMetadata(MODEL_FIELDS_REGISTRY, ctor) as Record<string, ModelFieldMeta>) ?? {};
-}
+
 
 export function finalizeRegisteredFields(
-  ctor: Function,
-  buildSchema: (fieldInfo: FieldInfo | undefined, designType?: unknown) => import('@typedantic/core').CoreSchema,
+    ctor: Function,
+    buildSchema: (type: unknown, fieldInfo?: FieldInfo) => BaseSchema,
 ): Record<string, ModelFieldMeta> {
-  const registry = getRegisteredFields(ctor);
-  const prototype = ctor.prototype as object;
+    const registry = getRegisteredFields(ctor);
+    const prototype = ctor.prototype as object;
 
-  for (const [name, meta] of Object.entries(registry)) {
-    const designType = getMetadata('design:type', prototype, name);
-    const fieldType = resolveFieldType(meta.fieldInfo, designType);
-    meta.schema = buildSchema(meta.fieldInfo, fieldType ?? String);
-  }
+    for (const [, meta] of Object.entries(registry)) {
+        const designType = getFieldPropertyMetadata('design:type', prototype, meta.name);
+        const fieldType = meta.fieldInfo?.type ?? (designType !== Object ? designType : undefined);
+        meta.schema = buildSchema(fieldType ?? String, meta.fieldInfo);
+    }
 
-  Object.defineProperty(ctor, 'modelFields', { value: registry, writable: true, configurable: true });
-  return registry;
+    defineFieldProperty(ctor, 'modelFields', registry);
+    return registry;
 }
-
 ```

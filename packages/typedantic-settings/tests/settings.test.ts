@@ -141,6 +141,40 @@ describe('BaseSettings.settingsValidate', () => {
         expect(settings.db.port).toBe(5432);
     });
 
+    it('keeps string env values that look like numbers (S1)', () => {
+        @settingsConfig({ envPrefix: 'APP_', envFile: false })
+        class AppSettings extends BaseSettings {
+            @Field({ type: String, alias: 'CODE' })
+            code!: string;
+        }
+
+        const settings = AppSettings.settingsValidate({ APP_CODE: '007' });
+        expect(settings.code).toBe('007');
+    });
+
+    it('matches camelCase nested fields case-insensitively (S2)', () => {
+        class DbSettings extends BaseModel {
+            @Field({ type: String })
+            poolSize!: string;
+        }
+
+        @settingsConfig({
+            envPrefix: 'APP_',
+            envNestedDelimiter: '__',
+            envFile: false,
+            caseSensitive: false,
+        })
+        class AppSettings extends BaseSettings {
+            @Field({ type: DbSettings })
+            dbConfig!: DbSettings;
+        }
+
+        const settings = AppSettings.settingsValidate({
+            APP_DBCONFIG__POOLSIZE: '10',
+        });
+        expect(settings.dbConfig.poolSize).toBe('10');
+    });
+
     it('prefers explicit env over .env file values', () => {
         const dir = mkdtempSync(join(tmpdir(), 'typedantic-settings-'));
         const path = join(dir, 'test.env');

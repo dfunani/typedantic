@@ -9,7 +9,7 @@ Vitest include: `packages/**/tests/**/*.test.ts`.
 | File | Covers |
 |------|--------|
 | `field-schema.test.ts` | `getModelFields` emits date/array/object/model/enum/literal/nullable/number; bare `Object` is **not** an open object |
-| `base-model.test.ts` | `modelValidate` on nested tagged unions, enums, `defaultFactory`, extra-forbid |
+| `base-model.test.ts` | `modelValidate` on nested tagged unions, enums, `defaultFactory`, extra-forbid (hydration via `factories.ts`) |
 
 Import `reflect-metadata` first. Import the package from `../src/index.js` so tests run against source.
 

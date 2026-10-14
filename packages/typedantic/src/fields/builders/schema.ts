@@ -1,14 +1,16 @@
-import { BaseSchema, IntSchema, NumbersSchema, StringSchema } from "@typedantic/core";
-import type { FieldInfo, ModelFieldMeta } from "../types.js";
-import { getRegisteredFields } from "../properties.js";
-import { finalizeRegisteredFields } from "../registry.js";
-import { inferSchemaFromType } from "./fields.js";
-
+import { BaseSchema, IntSchema, NumbersSchema, StringSchema } from '@typedantic/core';
+import type { FieldInfo, ModelFieldMeta } from '../types.js';
+import { getRegisteredFields } from '../properties.js';
+import { finalizeRegisteredFields, FIELDS_FINALIZED } from '../registry.js';
+import { inferSchemaFromType } from './fields.js';
 
 export function getModelFields(ctor: Function): Record<string, ModelFieldMeta> {
+    if (Object.prototype.hasOwnProperty.call(ctor, FIELDS_FINALIZED)) {
+        return getRegisteredFields(ctor);
+    }
     const registered = getRegisteredFields(ctor);
     if (Object.keys(registered).length === 0) return {};
-    return finalizeRegisteredFields(ctor, inferSchemaFromType)
+    return finalizeRegisteredFields(ctor, inferSchemaFromType);
 }
 
 export function getSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo): BaseSchema {
@@ -28,6 +30,8 @@ export function getBaseSchemaFromType(type: unknown, fieldInfo?: FieldInfo): Bas
     if (type === 'number') return { type: 'number' };
     if (type === Boolean || type === 'boolean') return { type: 'boolean' };
     if (type === Date || type === 'date') return { type: 'date' };
+    if (type === 'any') return { type: 'any' };
+    if (type === 'never') return { type: 'never' };
 
     if (!fieldInfo) return { type: 'string' };
 
@@ -37,15 +41,23 @@ export function getBaseSchemaFromType(type: unknown, fieldInfo?: FieldInfo): Bas
     return { type: 'string' };
 }
 
-
 function isNumberConstraint(fieldInfo: FieldInfo): boolean {
-    return fieldInfo.ge !== undefined || fieldInfo.gt !== undefined || fieldInfo.le !== undefined || fieldInfo.lt !== undefined || fieldInfo.multipleOf !== undefined;
+    return (
+        fieldInfo.ge !== undefined ||
+        fieldInfo.gt !== undefined ||
+        fieldInfo.le !== undefined ||
+        fieldInfo.lt !== undefined ||
+        fieldInfo.multipleOf !== undefined
+    );
 }
 
 function isStringConstraint(fieldInfo: FieldInfo): boolean {
-    return fieldInfo.minLength !== undefined || fieldInfo.maxLength !== undefined || fieldInfo.pattern !== undefined;
+    return (
+        fieldInfo.minLength !== undefined ||
+        fieldInfo.maxLength !== undefined ||
+        fieldInfo.pattern !== undefined
+    );
 }
-
 
 function buildStringSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo): StringSchema {
     if (!fieldInfo) return schema as StringSchema;
@@ -55,10 +67,15 @@ function buildStringSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo)
         maxLength: fieldInfo.maxLength,
         pattern: fieldInfo.pattern,
         strict: fieldInfo.strict,
+        title: fieldInfo.title,
+        description: fieldInfo.description,
     } as StringSchema;
 }
 
-function buildNumbersSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo): IntSchema | NumbersSchema {
+function buildNumbersSchemaConstraints(
+    schema: BaseSchema,
+    fieldInfo?: FieldInfo,
+): IntSchema | NumbersSchema {
     if (!fieldInfo) return schema as IntSchema | NumbersSchema;
     return {
         ...schema,
@@ -68,5 +85,7 @@ function buildNumbersSchemaConstraints(schema: BaseSchema, fieldInfo?: FieldInfo
         lt: fieldInfo.lt,
         multipleOf: fieldInfo.multipleOf,
         strict: fieldInfo.strict,
+        title: fieldInfo.title,
+        description: fieldInfo.description,
     } as IntSchema | NumbersSchema;
 }

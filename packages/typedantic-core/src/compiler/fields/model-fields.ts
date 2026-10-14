@@ -23,13 +23,20 @@ export function compileModelFields(
         const result: Record<string, unknown> = {};
         const extra = schema.extra ?? 'ignore';
 
+        const populateByName = schema.populateByName !== false;
+
         for (const [name, field] of Object.entries(schema.fields)) {
-            const keys = field.alias ? [name, field.alias] : [name];
+            const alias = field.validationAlias ?? field.alias;
+            const keys = alias
+                ? populateByName
+                    ? [alias, name]
+                    : [alias]
+                : [name];
             let value: unknown = undefined;
             let found = false;
 
             for (const key of keys) {
-                if (key in data) {
+                if (Object.prototype.hasOwnProperty.call(data, key) || key in data) {
                     value = data[key];
                     found = true;
                     break;
@@ -44,7 +51,7 @@ export function compileModelFields(
                 } else if (field.required) {
                     const missingCtx: ValidationContext = {
                         path: [...ctx.path, name],
-                        config: ctx.config,
+                        config: { ...ctx.config, strict },
                         errors: ctx.errors,
                     };
                     ctx.errors.push(createFieldError(input, missingCtx, "missing", strict));
@@ -56,7 +63,7 @@ export function compileModelFields(
 
             const fieldCtx: ValidationContext = {
                 path: [...ctx.path, name],
-                config: ctx.config,
+                config: { ...ctx.config, strict },
                 errors: ctx.errors,
             };
             result[name] = fieldValidators[name](value, fieldCtx);
@@ -91,6 +98,12 @@ function createFieldError(value: unknown, context: ValidationContext, errorConte
     const errorDetails = createErrorDetails();
     const errorDetail = errorDetails.model_fields[errorContext];
     const errorType = errorDetail.name;
-    const errorMessage = errorDetail.message.replace('{placeholder}', value as string);
+    let placeholder = '';
+    if (typeof value === 'string') placeholder = value;
+    else if (value === null || value === undefined) placeholder = String(value);
+    else if (typeof value === 'symbol') placeholder = value.toString();
+    else if (typeof value === 'object') placeholder = Object.prototype.toString.call(value);
+    else placeholder = String(value);
+    const errorMessage = errorDetail.message.replace('{placeholder}', placeholder);
     return createValidationErrorDetail(errorType, [...context.path], errorMessage, value, { strict });
 }

@@ -5,8 +5,10 @@ V2 expands `@typedantic/core` to a production-ready IR + compiler.
 
 Do this **after** [05-tests-v1.md](./05-tests-v1.md) is green.
 
-**This chapter is the source of truth for the current tree.**  
-Main’s one-file compiler: [../../reference/compile.ts.md](../../reference/compile.ts.md) — copy structure, then apply the corrections below.
+**This chapter matches the live modular compiler** under `packages/typedantic-core/src/compiler/`.  
+Bulk reference: [../../reference/compile.ts.md](../../reference/compile.ts.md). Trust the repo layout below if they ever diverge.
+
+**Not public in 0.1:** `SchemaSerializer` and related symbols exist only as commented placeholders on `ModelClass` — do not export or document them yet.
 
 ---
 
@@ -42,7 +44,7 @@ A `SchemaValidator` that can compile and run:
 | Mutable `default: []` | Shared reference | Clone arrays / plain objects when applying defaults |
 | `validateJson` | `catch` swallows `ValidationError` | Only map `JSON.parse` failures to `json_invalid` |
 
-Details: [../00-overview/corrections-vs-main.md](../00-overview/corrections-vs-main.md)
+Full rationale for these rows lives in the **Corrections vs broken `main` behavior** table in [../../README.md](../../README.md).
 
 ---
 

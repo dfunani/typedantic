@@ -1,105 +1,95 @@
-# Reflect + metadata contracts
+# 3.1 — Reflect helpers and field types
 
-Read first: [../../topics/reflect-metadata.md](../../topics/reflect-metadata.md)
+Files:
 
-## `packages/typedantic/src/internal/reflect.ts`
+- `packages/typedantic/src/fields/properties.ts`
+- `packages/typedantic/src/fields/types.ts`
 
-Copy from [../../reference/reflect.ts.md](../../reference/reflect.ts.md) (or paste below):
+Import `reflect-metadata` once before any model class loads (see smoke test).
+
+## Reflect wrappers (`properties.ts`)
+
+Thin helpers over `Reflect.getMetadata` / `defineMetadata`:
 
 ```ts
 import 'reflect-metadata';
+import type { ModelFieldMeta } from './types.js';
+import { MODEL_FIELDS_REGISTRY } from './types.js';
 
-type ReflectMetadata = {
-  getMetadata?(key: string | symbol, target: object, propertyKey?: string | symbol): unknown;
-  defineMetadata?(
+export function getFieldPropertyMetadata(
+    key: string | symbol,
+    target: object,
+    propertyKey?: string | symbol,
+): unknown {
+    return (Reflect as { getMetadata?: Function }).getMetadata?.(key, target, propertyKey);
+}
+
+export function getRegisteredFields(ctor: Function): Record<string, ModelFieldMeta> {
+    return (getFieldPropertyMetadata(MODEL_FIELDS_REGISTRY, ctor) as Record<string, ModelFieldMeta>) ?? {};
+}
+
+export function defineFieldPropertyMetadata(
     key: string | symbol,
     value: unknown,
     target: object,
     propertyKey?: string | symbol,
-  ): void;
-};
-
-const reflect = Reflect as ReflectMetadata;
-
-export function getMetadata(
-  key: string | symbol,
-  target: object,
-  propertyKey?: string | symbol,
-): unknown {
-  return reflect.getMetadata?.(key as string, target, propertyKey);
+): void {
+    (Reflect as { defineMetadata?: Function }).defineMetadata?.(key, value, target, propertyKey);
 }
 
-export function defineMetadata(
-  key: string | symbol,
-  value: unknown,
-  target: object,
-  propertyKey?: string | symbol,
-): void {
-  reflect.defineMetadata?.(key as string, value, target, propertyKey);
+export function defineFieldProperty(ctor: object, name: string, value: unknown): void {
+    Object.defineProperty(ctor, name, { value, writable: true, configurable: true });
 }
 ```
 
-## `packages/typedantic/src/internal/metadata.ts`
+`getRegisteredFields` reads the `@Field` registry stored under `MODEL_FIELDS_REGISTRY`.
 
-V1 can use a trimmed version; full main file: [../../reference/metadata.ts.md](../../reference/metadata.ts.md)
+## Symbols and types (`types.ts`)
+
+Key exports:
 
 ```ts
-import type { CoreSchema, SchemaSerializer, SchemaValidator } from '@typedantic/core';
-
 export const MODEL_CONFIG_KEY = Symbol('typedantic:modelConfig');
-export const FIELD_VALIDATORS_KEY = Symbol('typedantic:fieldValidators');
-export const MODEL_VALIDATORS_KEY = Symbol('typedantic:modelValidators');
 export const CORE_SCHEMA_KEY = Symbol('typedantic:coreSchema');
 export const VALIDATOR_KEY = Symbol('typedantic:validator');
-export const SERIALIZER_KEY = Symbol('typedantic:serializer');
-
-export interface FieldInfo<T = unknown> {
-  /** Prefer explicit runtime type — Vitest often omits design:type */
-  type?: unknown;
-  default?: T;
-  defaultFactory?: () => T;
-  alias?: string;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: RegExp | string;
-  ge?: number;
-  gt?: number;
-  le?: number;
-  lt?: number;
-  multipleOf?: number;
-  strict?: boolean;
-  title?: string;
-  description?: string;
-}
-
-export interface ConfigDict {
-  strict?: boolean;
-  frozen?: boolean;
-  extra?: 'ignore' | 'allow' | 'forbid';
-  validateAssignment?: boolean;
-}
-
-export interface ModelFieldMeta {
-  name: string;
-  fieldInfo?: FieldInfo;
-  schema: CoreSchema;
-  required: boolean;
-  alias?: string;
-  default?: unknown;
-  defaultFactory?: () => unknown;
-}
-
-export type ModelClass<T extends new (...args: unknown[]) => object = new (...args: unknown[]) => object> =
-  T & {
-    modelFields: Record<string, ModelFieldMeta>;
-    modelConfig: ConfigDict;
-    [CORE_SCHEMA_KEY]?: CoreSchema;
-    [VALIDATOR_KEY]?: SchemaValidator;
-    [SERIALIZER_KEY]?: SchemaSerializer;
-  };
+export const MODEL_FIELDS_REGISTRY = Symbol('typedantic:fieldsRegistry');
+// FIELD_VALIDATORS_KEY, MODEL_VALIDATORS_KEY, SERIALIZER_KEY — reserved for V2
 ```
 
-**Import rule:** `from '@typedantic/core'` — never relative into core `src/`.  
-See [../../topics/workspaces-and-imports.md](../../topics/workspaces-and-imports.md).
+`FieldInfo` holds decorator options (`type`, constraints, `union`, `items`, `default`, `alias`, …). Full list is in the live file.
+
+`ModelFieldMeta` is the runtime registry entry:
+
+```ts
+export interface ModelFieldMeta {
+    name: string;
+    fieldInfo?: FieldInfo;
+    schema: BaseSchema;       // filled in finalizeRegisteredFields
+    required: boolean;
+    alias?: string;
+    default?: unknown;
+    defaultFactory?: () => unknown;
+}
+```
+
+`ModelClass` augments constructors with cached schema/validator and `modelFields`.
+
+## tsconfig requirements
+
+From root `tsconfig.base.json`:
+
+```json
+"experimentalDecorators": true,
+"emitDecoratorMetadata": true,
+"useDefineForClassFields": false
+```
+
+Without these, `design:type` metadata is missing and you must pass `@Field({ type: String })` explicitly.
+
+## Checklist
+
+- [ ] `MODEL_FIELDS_REGISTRY` symbol defined
+- [ ] `FieldInfo` documents `type`, constraints, nested shapes
+- [ ] `properties.ts` does not import `@typedantic/core` beyond types used in `ModelFieldMeta`
 
 Next: [02-field-and-registry.md](./02-field-and-registry.md)

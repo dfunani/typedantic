@@ -1,6 +1,6 @@
 {
     "name": "@typedantic/core",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "description": "Zero-dependency schema IR, compiler, and validator for Typedantic",
     "type": "module",
     "main": "./dist/index.js",
@@ -14,7 +14,8 @@
     "files": [
         "dist",
         "LICENSE",
-        "CHANGELOG.md"
+        "CHANGELOG.md",
+        "README.md"
     ],
     "sideEffects": false,
     "scripts": {

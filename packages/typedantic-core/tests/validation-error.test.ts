@@ -11,13 +11,20 @@ describe('ValidationError', () => {
         expect(err.errors.length).toBe(1);
     });
 
-    it('toJson() is API response shaped', () => {
+    it('toJson() is API response shaped with dual keys', () => {
         const err = new ValidationError([
             createValidationErrorDetail('missing', ['name'], 'Field required', {}),
         ]);
         expect(JSON.parse(err.toJson())).toEqual({
             detail: [
-                { type: 'missing', location: ['name'], message: 'Field required', input: {} },
+                {
+                    type: 'missing',
+                    location: ['name'],
+                    message: 'Field required',
+                    input: {},
+                    loc: ['name'],
+                    msg: 'Field required',
+                },
             ],
         });
     });

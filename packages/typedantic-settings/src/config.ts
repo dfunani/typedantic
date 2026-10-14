@@ -6,4 +6,6 @@ export interface SettingsConfigDict extends ConfigDict {
     envNestedDelimiter?: string;
     caseSensitive?: boolean;
     populateByName?: boolean;
+    /** Directory of secret files (field-name → file contents); lowest priority when set. */
+    secretsDir?: string;
 }

@@ -43,16 +43,23 @@ class Order extends BaseModel {
 
 **Path:** `packages/typedantic/src/fields/types.ts`
 
-Add to the V1 `FieldInfo`:
+Match the live interface in `packages/typedantic/src/fields/types.ts`:
 
-| Option | Emits |
-|--------|--------|
+| Option | Emits / behavior |
+|--------|------------------|
+| `type` | Explicit runtime type when `design:type` is missing (Vitest) |
 | `items` | `array.itemsSchema` (with `type: Array` or `'array'`) |
-| `values` / `keys` | `object` (also `type: 'object'`) |
+| `values` / `keys` | `object.valuesSchema` / optional `keysSchema` |
 | `enum` | `enum.members` |
-| `literal` | `literal.expected` |
+| `literal` | `literal.expected` (single value or array) |
 | `union` + `discriminator` | tagged or untagged `union` |
 | `nullable` | wrap in `{ type: 'nullable', schema }` |
+| `default` / `defaultFactory` | on `ModelFieldMeta`; core clones array/object defaults |
+| `alias` | model-fields alias + settings env lookup |
+| `minLength` / `maxLength` / `pattern` | string constraints (also array length when `type: Array`) |
+| `ge` / `gt` / `le` / `lt` / `multipleOf` | int **and** `type: 'number'` |
+| `strict` | per-field strict flag forwarded to inner compile where applicable |
+| `title` / `description` | metadata on schema nodes that support it |
 
 `minLength` / `maxLength` on an `Array` field apply to the **array**, not the item strings.
 
@@ -73,7 +80,28 @@ if (effective === 'object' || fieldInfo?.values !== undefined || fieldInfo?.keys
 
 A bare `@Field({ type: Object })` must **not** become a string-valued open object.
 
-Nested models: if `type` is a class with `modelValidate`, emit `buildModelFieldSchema(type)` (plain objects, not nested class instances — the core engine has no constructors).
+Nested models: if `type` is a class with `modelValidate`, emit `buildModelFieldSchema(type)`. The **core** validator still returns plain objects; hydration happens in the model layer (next section).
+
+---
+
+## Instance hydration — `factories.ts`
+
+**Path:** `packages/typedantic/src/models/factories.ts`
+
+After `SchemaValidator.validateModel` succeeds, `BaseModel.modelValidate` calls `buildBaseModelInstance`, which walks validated field values and runs `hydrateFieldValue` using each field’s `FieldInfo`:
+
+| Validated value | `FieldInfo` | Result on instance |
+|-----------------|-------------|-------------------|
+| plain object | `type: SomeModel` | `SomeModel.modelConstruct(record)` |
+| array of objects | `items: SomeModel` | each element constructed (skips non-objects / existing instances) |
+| plain object | `union: [A, B, …]` | pick arm via literal tags on union members, then `modelConstruct` |
+| other | — | value copied as-is |
+
+`modelConstruct` is the same builder without re-validation — use it only when you already trust the shape.
+
+Union matching (`matchUnionModel` / `modelLiteralsMatch`) compares discriminator literals from each variant’s compiled `model-fields` schema; if no literal matches, the first model arm is used as a fallback.
+
+`buildBaseModelSchema` / `buildBaseModelValidator` cache on the **constructor** with own-property checks (`hasOwn`) so subclasses do not inherit a parent’s schema or validator.
 
 ---
 

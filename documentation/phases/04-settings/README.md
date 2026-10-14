@@ -1,13 +1,23 @@
-# Phase 4 — `typedantic-settings`
+# Phase 4 — `@typedantic/settings`
 
-**When:** After Milestone V1 (BaseModel works). Settings sits on top of `typedantic`.
+**When:** After Milestone V1 (`BaseModel` works). Settings sits on `@typedantic/model`.
 
 ```
-typedantic-settings  →  typedantic  →  @typedantic/core
+@typedantic/settings  →  @typedantic/model  →  @typedantic/core
 ```
 
-Main reference (copy-paste starting point): [../../reference/settings-index.ts.md](../../reference/settings-index.ts.md)  
-Corrections to apply: [../00-overview/corrections-vs-main.md](../00-overview/corrections-vs-main.md)
+**Live sources (read these first):**
+
+| File | Role |
+|------|------|
+| `packages/typedantic-settings/src/index.ts` | `BaseSettings`, `settingsValidate`, `settingsConfig`, `settingsCustomiseSources` |
+| `packages/typedantic-settings/src/config.ts` | `SettingsConfigDict` (extends model `ConfigDict`) |
+| `packages/typedantic-settings/src/environment.ts` | `.env` load, flatten, coercion, nested rebuild helpers |
+| `packages/typedantic-settings/src/sources.ts` | Pluggable sources + deep merge |
+
+**Tests:** `packages/typedantic-settings/tests/settings.test.ts`, `sources.test.ts`.
+
+Reference snapshots: [settings-index](../../reference/settings-index.ts.md) · [settings-config](../../reference/settings-config.ts.md) · [settings-environment](../../reference/settings-environment.ts.md)
 
 ## What you are building
 
@@ -31,59 +41,76 @@ const settings = AppSettings.settingsValidate(process.env);
 // settings is InstanceType<typeof AppSettings>, not a bare BaseSettings
 ```
 
-## Build steps
+## `SettingsConfigDict`
 
-1. Package already scaffolded in Phase 1 (`packages/typedantic-settings`)
-2. Implement `BaseSettings.settingsValidate()` with:
-   - Precedence: explicit env arg > `process.env` > `.env` file > field defaults
-   - `envPrefix` respected for **aliases** (main bug: aliases ignored prefix)
-   - Nested delimiter rebuild (`APP_DB__HOST` → `{ db: { host } }` — main only flattened)
-   - Polymorphic return `InstanceType<T>` (main typed as `BaseSettings`)
-3. Export from `src/index.ts`
-4. Always `bun run build` on `typedantic` first (settings `tsconfig` `paths` point at `../typedantic/dist/index.d.ts`)
+Exported from `config.ts` and re-exported from the package entry:
 
-```bash
-bun run --filter typedantic build
-bun run --filter typedantic-settings build
-# pnpm: pnpm --filter typedantic build && pnpm --filter typedantic-settings build
-# npm:  npm run build -w typedantic && npm run build -w typedantic-settings
+| Option | Default | Role |
+|--------|---------|------|
+| `envPrefix` | `''` | Strip prefix before matching field aliases |
+| `envFile` | `'.env'` | Path under `process.cwd()`; set `false` to skip |
+| `envNestedDelimiter` | `'__'` | Segment delimiter in env keys (e.g. `APP_DB__HOST`) |
+| `caseSensitive` | `false` | Prefix and alias matching |
+| `populateByName` | `true` | Same as model config (field name + alias) |
+| `secretsDir` | unset | Directory of secret files (lowest priority when set) |
+| `extra` / `strict` / … | model defaults | Inherited from `ConfigDict` on `BaseModel` |
+
+## Settings sources (0.3.0)
+
+Default priority (highest first): `initSettingsSource` → `envSettingsSource` → `dotenvSettingsSource`. Optional `secretsDir` appends `secretsDirectorySettingsSource`.
+
+```ts
+@settingsCustomiseSources((init, env, dotenv) => [
+  init, env, dotenv, jsonFileSettingsSource('settings.json'),
+])
+@settingsConfig({ envPrefix: 'APP_', envFile: false })
+class AppSettings extends BaseSettings { /* ... */ }
+
+AppSettings.settingsValidate(process.env, { initData: { host: 'x' } });
 ```
 
-## Corrections vs main (must fix)
+## `settingsValidate` flow
 
-| Issue on `main` | Tutorial fix |
-|-----------------|--------------|
-| `settingsValidate` return type is `BaseSettings` | `InstanceType<T>` via generic `this` |
-| Field aliases ignore `envPrefix` | Prefixed lookup: `PREFIX + alias` |
-| Nested env only flattened | Rebuild nested objects from delimiter segments |
-| Mutable shared defaults | Prefer `defaultFactory` on settings fields |
+1. Resolve sources (`settingsCustomiseSources` or defaults; append `secretsDir` when set).
+2. Each env-like source maps a string env map → field-keyed data via `envMapToSettingsData` (`flattenEnv`, nested rebuild, `coerceEnvForSchema`).
+3. Deep-merge sources low→high priority so nested leaves combine and higher priority wins.
+4. `modelValidate(data)` — polymorphic `this: T` return type → `InstanceType<T>`.
+
+There is **no** `tsconfig` paths hack: the package depends on `@typedantic/model` via workspace + published `dist`. Build model before settings:
+
+```bash
+bun run --filter @typedantic/model build
+bun run --filter @typedantic/settings build
+```
 
 ## Minimal `.env` parser scope
 
-Supported: `KEY=value`, optional quotes, `#` comments, blank lines.  
-Not supported: `export`, interpolation, multiline.
+Implemented in `loadEnvFile` / `parseEnvLine`:
 
-## Coercion
+- `KEY=value`, optional quotes, `#` comments, blank lines
 
-When reading string env values, coerce:
+Not supported: `export`, interpolation, multiline values.
+
+## Coercion (`parseEnvValue`)
 
 | Input | Output |
 |-------|--------|
 | `"true"` / `"false"` | boolean |
-| integer / float strings | number |
+| integer / decimal strings | number |
 | `"null"` | `null` |
-| JSON-looking `{...}` / `[...]` | `JSON.parse` when valid |
+| `{...}` / `[...]` when valid JSON | parsed value |
+| anything else | string |
 
-## Test ideas
+## What tests cover
 
-- Prefixed aliases load (`APP_HOST` with `envPrefix: 'APP_'`)
-- Unprefixed aliases fail when prefix is set
-- Nested model field from `APP_DB__HOST`
-- Boolean/number coercion
-- Return type is the subclass instance
+See `settings.test.ts`:
+
+- `parseEnvValue`, `flattenEnv`, `setNestedValue`, `lookupPrefixedEnv`, `loadEnvFile`
+- Prefixed aliases, nested `APP_DB__HOST`-style keys, coercion, subclass instance type
 
 ## Checkpoint
 
 ```bash
+bun run build
 bunx vitest run packages/typedantic-settings
 ```

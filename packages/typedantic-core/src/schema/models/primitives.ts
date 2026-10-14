@@ -6,6 +6,8 @@ export interface IntSchema {
     le?: number;
     lt?: number;
     multipleOf?: number;
+    title?: string;
+    description?: string;
 }
 
 export interface NumbersSchema {
@@ -16,6 +18,8 @@ export interface NumbersSchema {
     le?: number;
     lt?: number;
     multipleOf?: number;
+    title?: string;
+    description?: string;
 }
 
 export interface StringSchema {
@@ -24,6 +28,8 @@ export interface StringSchema {
     minLength?: number;
     maxLength?: number;
     pattern?: RegExp | string;
+    title?: string;
+    description?: string;
 }
 
 export interface BooleanSchema {

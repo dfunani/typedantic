@@ -2,7 +2,7 @@
 
 Pydantic-style validation for TypeScript.
 
-**Status:** 0.1.0 — production-ready for the documented surface. ESM-only, Node.js ≥ 20.
+**Status:** 0.3.0 — RootModel, annotated types, createModel, custom settings sources (plus V2 serializers/validators/JSON Schema/TypeAdapter). ESM-only, Node.js ≥ 20.
 
 > The unscoped npm name `typedantic` is already taken. Install the scoped packages below.
 
@@ -86,11 +86,9 @@ class AppSettings extends BaseSettings {
 const settings = AppSettings.settingsValidate(process.env);
 ```
 
-## 0.1 scope
+## Scope (0.3.0)
 
-**Included:** primitives, literals, enums, arrays, objects, dates, nullable/optional/defaults, discriminated unions, nested models, FastAPI-shaped `ValidationError`, settings env loading (prefix, nested delimiter, `.env`).
-
-**Not in 0.1:** JSON Schema export, `TypeAdapter`, `@validator` / computed fields / custom serializers. See [CHANGELOG.md](./CHANGELOG.md).
+**Included:** primitives, literals, enums, arrays, objects, dates, unions, nested models, FastAPI-shaped `ValidationError` (dual `loc`/`msg` keys), settings env loading + custom sources, `@fieldValidator` / `@modelValidator`, `@fieldSerializer` / `@modelSerializer` / `@computedField`, `SchemaSerializer` dump options, `modelJsonSchema` / `toJsonSchema`, `TypeAdapter`, `modelValidateJson`, `modelCopy`, validating constructor, `RootModel`, annotated types (`EmailStr`, `HttpUrl`, `UUID`, `PositiveInt`, `SecretStr`, …), `createModel` / `extendModel`. See [CHANGELOG.md](./CHANGELOG.md).
 
 ## Monorepo development
 
@@ -102,11 +100,31 @@ bun run test
 bun run functional-test
 ```
 
-Publishing (maintainers): `bun run publish:packages` after a GitHub Release, or the [Publish](./.github/workflows/publish.yml) workflow. Order is always core → model → settings. Bun rewrites `workspace:*` to concrete versions on publish.
+## Publishing (maintainers)
+
+Full guide (npm org, profiles, tokens, release, **docs distribution**):
+
+→ **[documentation/phases/05-ship/distribution.md](./documentation/phases/05-ship/distribution.md)**
+
+Short path after `@typedantic` org + `NPM_TOKEN` exist:
+
+```bash
+bun run pack:dry
+bun run publish:packages
+# or: create a GitHub Release → .github/workflows/publish.yml
+```
+
+Publish order is always **core → model → settings**. Bun rewrites `workspace:*` on publish.
 
 ## Documentation
 
-Curriculum and design notes: [documentation/](./documentation/).
+| Audience | Start |
+|----------|--------|
+| Rebuild from scratch | [documentation/tutorial.md](./documentation/tutorial.md) |
+| Doc hub | [documentation/](./documentation/) |
+| npm / release runbook | [distribution.md](./documentation/phases/05-ship/distribution.md) |
+
+Package pages on npm use each package’s `README.md` and link back to the GitHub curriculum.
 
 ## License
 

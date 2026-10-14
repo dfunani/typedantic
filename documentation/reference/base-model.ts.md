@@ -1,150 +1,175 @@
-# Reference: BaseModel
+# `packages/typedantic/src/models/base-model.ts` + `factories.ts`
 
-Copied from `main`: `packages/typedantic/src/models/base-model.ts`
+**Package:** `@typedantic/model`  
+**Note:** Live source (0.1) — authoritative for rebuild. Prefer phase pages for teaching order.
 
-```typescript
-import {
-  SchemaSerializer,
-  SchemaValidator,
-  ValidationError,
-  type CoreSchema,
-  type DumpOptions,
-} from '@typedantic/core';
-import { getModelConfig } from '../config/model-config.js';
-import {
-  CORE_SCHEMA_KEY,
-  SERIALIZER_KEY,
-  VALIDATOR_KEY,
-  type ConfigDict,
-  type ModelClass,
-  type ModelFieldMeta,
-} from '../internal/metadata.js';
-import { buildModelSchema, collectModelFields } from '../internal/schema-builder.js';
-import { generateJsonSchema } from '../json-schema/generator.js';
-import { getComputedFields } from '../validators/field-validator.js';
-import { applyFieldSerializers } from '../serializers/field-serializer.js';
+Hydration of nested models and union arms happens in `factories.ts` (`buildBaseModelInstance` / `hydrateFieldValue`).
+
+## `models/base-model.ts`
+
+```ts
+import { getModelConfig } from "../config/model-config.js";
+import type { ConfigDict, ModelFieldMeta } from "../fields/types.js";
+import { buildBaseModelSchema, buildBaseModelValidator, buildBaseModelInstance } from "./factories.js";
 
 export class BaseModel {
-  static modelConfig: ConfigDict = {};
-  static modelFields: Record<string, ModelFieldMeta> = {};
+    static modelConfig: ConfigDict = {};
+    static modelFields: Record<string, ModelFieldMeta> = {};
 
-  static modelValidate<T extends typeof BaseModel>(this: T, data: unknown): InstanceType<T> {
-    const schema = getOrBuildSchema(this);
-    const validator = getOrBuildValidator(this, schema);
-    const config = getModelConfig(this);
-    const validated = validator.validatePython(data, { strict: config.strict });
-    return instantiateModel(this as unknown as ModelClass<T>, validated as Record<string, unknown>);
-  }
-
-  static modelValidateJson<T extends typeof BaseModel>(this: T, json: string): InstanceType<T> {
-    const schema = getOrBuildSchema(this);
-    const validator = getOrBuildValidator(this, schema);
-    const validated = validator.validateJson(json);
-    return instantiateModel(this as unknown as ModelClass<T>, validated as Record<string, unknown>);
-  }
-
-  static modelConstruct<T extends typeof BaseModel>(
-    this: T,
-    values: Record<string, unknown>,
-  ): InstanceType<T> {
-    return instantiateModel(this as unknown as ModelClass<T>, values);
-  }
-
-  static modelJsonSchema(this: ModelClass): Record<string, unknown> {
-    const schema = getOrBuildSchema(this);
-    return generateJsonSchema(schema, this.name);
-  }
-
-  modelDump(options?: DumpOptions): Record<string, unknown> {
-    const ctor = this.constructor as ModelClass;
-    const schema = getOrBuildSchema(ctor);
-    const serializer = getOrBuildSerializer(ctor, schema);
-    let data = serializer.toPython(this, options) as Record<string, unknown>;
-
-    for (const name of getComputedFields(ctor)) {
-      const value = (this as Record<string, unknown>)[name];
-      if (typeof value === 'function') {
-        data[name] = value.call(this);
-      } else {
-        data[name] = value;
-      }
+    static modelValidate<T extends typeof BaseModel>(this: T, data: unknown): InstanceType<T> {
+        const schema = buildBaseModelSchema(this);
+        const validator = buildBaseModelValidator(this, schema);
+        const config = getModelConfig(this);
+        const validated = validator.validateModel(data, { strict: config.strict });
+        return buildBaseModelInstance(this, validated as Record<string, unknown>);
     }
 
-    return applyFieldSerializers(ctor, data);
-  }
+    static modelConstruct<T extends typeof BaseModel>(
+        this: T,
+        values: Record<string, unknown>,
+    ): InstanceType<T> {
+        return buildBaseModelInstance(this, values);
+    }
 
-  modelDumpJson(options?: DumpOptions): string {
-    const ctor = this.constructor as ModelClass;
-    const schema = getOrBuildSchema(ctor);
-    const serializer = getOrBuildSerializer(ctor, schema);
-    return serializer.toJson(this, options);
-  }
+    modelDump(): Record<string, unknown> {
+        const out: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(this as Record<string, unknown>)) {
+            out[key] = value;
+        }
+        return out;
+    }
 
-  modelCopy(update?: Record<string, unknown>): this {
-    const ctor = this.constructor as ModelClass<typeof BaseModel>;
+    modelDumpJson(): string {
+        return JSON.stringify(this.modelDump());
+    }
+}
+```
+
+## `models/factories.ts`
+
+```ts
+import { BaseSchema, SchemaValidator } from "@typedantic/core";
+import { getModelConfig } from "../config/model-config.js";
+import { CORE_SCHEMA_KEY, FieldInfo, ModelClass, VALIDATOR_KEY } from "../fields/types.js";
+import { buildModelFieldSchema } from "../fields/builders/fields.js";
+import { getModelFields } from "../fields/builders/schema.js";
+
+function hasOwn(ctor: object, key: string | symbol): boolean {
+    return Object.prototype.hasOwnProperty.call(ctor, key);
+}
+
+export function buildBaseModelSchema(ctor: Function): BaseSchema {
+    if (hasOwn(ctor, CORE_SCHEMA_KEY)) {
+        return (ctor as ModelClass)[CORE_SCHEMA_KEY]!;
+    }
+    getModelFields(ctor);
+    const schema = buildModelFieldSchema(ctor);
+    Object.defineProperty(ctor, CORE_SCHEMA_KEY, { value: schema });
+    return schema;
+}
+
+export function buildBaseModelValidator(ctor: Function, schema: BaseSchema): SchemaValidator {
+    if (hasOwn(ctor, VALIDATOR_KEY)) {
+        return (ctor as ModelClass)[VALIDATOR_KEY]!;
+    }
     const config = getModelConfig(ctor);
-    const data = { ...this.modelDump(), ...update };
+    const validator = new SchemaValidator(schema, { strict: config.strict });
+    Object.defineProperty(ctor, VALIDATOR_KEY, { value: validator });
+    return validator;
+}
 
-    if (config.validateAssignment !== false && update) {
-      return ctor.modelValidate(data) as this;
+type ModelStatic = {
+    modelConstruct(values: Record<string, unknown>): object;
+};
+
+export function buildBaseModelInstance<T extends new (...args: unknown[]) => object>(
+    ctor: ModelClass<T>,
+    data: Record<string, unknown>,
+): InstanceType<T> {
+    const config = getModelConfig(ctor);
+    const fields = getModelFields(ctor);
+    const instance = Object.create(ctor.prototype) as InstanceType<T>;
+
+    for (const [key, value] of Object.entries(data)) {
+        const meta = fields[key];
+        const hydrated = meta ? hydrateFieldValue(meta.fieldInfo, value) : value;
+        Object.defineProperty(instance, key, {
+            value: hydrated,
+            writable: !config.frozen,
+            enumerable: true,
+            configurable: !config.frozen,
+        });
     }
 
-    return instantiateModel(ctor, data) as this;
-  }
+    if (config.frozen) Object.freeze(instance);
+    return instance;
 }
 
-function getOrBuildSchema(ctor: Function): CoreSchema {
-  if ((ctor as ModelClass)[CORE_SCHEMA_KEY]) {
-    return (ctor as ModelClass)[CORE_SCHEMA_KEY]!;
-  }
-  collectModelFields(ctor);
-  const schema = buildModelSchema(ctor);
-  Object.defineProperty(ctor, CORE_SCHEMA_KEY, { value: schema });
-  return schema;
+function isModelCtor(type: unknown): type is ModelClass & ModelStatic {
+    return (
+        typeof type === 'function' &&
+        type !== String &&
+        type !== Number &&
+        type !== Boolean &&
+        type !== Date &&
+        type !== Array &&
+        type !== Object &&
+        typeof (type as { modelValidate?: unknown }).modelValidate === 'function' &&
+        typeof (type as { modelConstruct?: unknown }).modelConstruct === 'function'
+    );
 }
 
-function getOrBuildValidator(ctor: Function, schema: CoreSchema): SchemaValidator {
-  if ((ctor as ModelClass)[VALIDATOR_KEY]) {
-    return (ctor as ModelClass)[VALIDATOR_KEY]!;
-  }
-  const config = getModelConfig(ctor);
-  const validator = new SchemaValidator(schema, { strict: config.strict });
-  Object.defineProperty(ctor, VALIDATOR_KEY, { value: validator });
-  return validator;
+function hydrateFieldValue(fieldInfo: FieldInfo | undefined, value: unknown): unknown {
+    if (value === null || value === undefined) return value;
+
+    if (Array.isArray(value) && isModelCtor(fieldInfo?.items)) {
+        const itemCtor = fieldInfo.items;
+        return value.map((item) => {
+            if (item === null || item === undefined) return item;
+            if (typeof item !== 'object' || Array.isArray(item)) return item;
+            if (item instanceof itemCtor) return item;
+            return itemCtor.modelConstruct(item as Record<string, unknown>);
+        });
+    }
+
+    if (typeof value !== 'object' || Array.isArray(value)) return value;
+
+    const record = value as Record<string, unknown>;
+
+    if (fieldInfo?.union) {
+        const matched = matchUnionModel(fieldInfo.union, record);
+        if (matched) return matched.modelConstruct(record);
+    }
+
+    if (isModelCtor(fieldInfo?.type)) {
+        if (value instanceof fieldInfo.type) return value;
+        return fieldInfo.type.modelConstruct(record);
+    }
+
+    return value;
 }
 
-function getOrBuildSerializer(ctor: Function, schema: CoreSchema): SchemaSerializer {
-  if ((ctor as ModelClass)[SERIALIZER_KEY]) {
-    return (ctor as ModelClass)[SERIALIZER_KEY]!;
-  }
-  const serializer = new SchemaSerializer(schema);
-  Object.defineProperty(ctor, SERIALIZER_KEY, { value: serializer });
-  return serializer;
+function matchUnionModel(
+    union: unknown[],
+    value: Record<string, unknown>,
+): (ModelClass & ModelStatic) | undefined {
+    for (const choice of union) {
+        if (!isModelCtor(choice)) continue;
+        if (modelLiteralsMatch(choice, value)) return choice;
+    }
+    // Fall back to first model arm if no literals discriminate.
+    return union.find(isModelCtor);
 }
 
-function instantiateModel<T extends new (...args: unknown[]) => object>(
-  ctor: ModelClass<T>,
-  data: Record<string, unknown>,
-): InstanceType<T> {
-  const config = getModelConfig(ctor);
-  const instance = Object.create(ctor.prototype) as InstanceType<T>;
-
-  for (const [key, value] of Object.entries(data)) {
-    Object.defineProperty(instance, key, {
-      value,
-      writable: !config.frozen,
-      enumerable: true,
-      configurable: !config.frozen,
-    });
-  }
-
-  if (config.frozen) {
-    Object.freeze(instance);
-  }
-
-  return instance;
+function modelLiteralsMatch(ctor: ModelClass, value: Record<string, unknown>): boolean {
+    const fields = getModelFields(ctor);
+    let sawLiteral = false;
+    for (const [name, meta] of Object.entries(fields)) {
+        if (meta.schema.type !== 'literal') continue;
+        sawLiteral = true;
+        const expected = (meta.schema as { expected: unknown[] }).expected;
+        if (!expected.includes(value[name])) return false;
+    }
+    return sawLiteral;
 }
-
-export { ValidationError };
-
 ```

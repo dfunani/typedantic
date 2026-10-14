@@ -1,3 +1,6 @@
+# Publishes @typedantic/core → @typedantic/model → @typedantic/settings
+# Requires: npm org @typedantic + repo secret NPM_TOKEN
+# Runbook: documentation/phases/05-ship/distribution.md
 name: Publish
 
 on:
@@ -26,6 +29,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run test
       - run: bun run functional-test
+      - run: bun run pack:dry
       - name: Publish packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
