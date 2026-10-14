@@ -1,7 +1,7 @@
 # Typedantic Documentation — Rebuild From Scratch
 
-This folder is a **complete rebuild curriculum** for Typedantic.
-It is based on the `main` branch architecture, with **intentional corrections** so a beginner can produce a working library.
+This folder is a **complete rebuild curriculum** for Typedantic, aligned with the **current monorepo** (`@typedantic/core`, `@typedantic/model`, `@typedantic/settings`).
+It includes intentional fixes versus older broken patterns so a beginner can reproduce a working library.
 
 If you only read one file, start here: **[tutorial.md](./tutorial.md)** (linear path).
 
@@ -18,6 +18,7 @@ If you only read one file, start here: **[tutorial.md](./tutorial.md)** (linear 
 | Build `@typedantic/model` (BaseModel) | [phases/03-typedantic/README.md](./phases/03-typedantic/README.md) |
 | Build `@typedantic/settings` | [phases/04-settings/README.md](./phases/04-settings/README.md) |
 | Test, CI, publish | [phases/05-ship/README.md](./phases/05-ship/README.md) |
+| **npm org, tokens, release, docs distribution** | [phases/05-ship/distribution.md](./phases/05-ship/distribution.md) |
 | Deep dive: reflect-metadata | [topics/reflect-metadata.md](./topics/reflect-metadata.md) |
 | Deep dive: decorators | [topics/decorators.md](./topics/decorators.md) |
 | Deep dive: CoreSchema IR | [topics/core-schema-ir.md](./topics/core-schema-ir.md) |
@@ -25,8 +26,8 @@ If you only read one file, start here: **[tutorial.md](./tutorial.md)** (linear 
 | Deep dive: ValidationError / 422 | [topics/validation-errors.md](./topics/validation-errors.md) |
 | Deep dive: workspaces & imports | [topics/workspaces-and-imports.md](./topics/workspaces-and-imports.md) |
 | Deep dive: NodeNext `.js` imports | [topics/nodenext-js-extensions.md](./topics/nodenext-js-extensions.md) |
-| Why test.ts fails | [topics/why-test-ts-fails.md](./topics/why-test-ts-fails.md) |
-| Copy-paste reference sources | [reference/](./reference/) |
+| Common pitfalls (build, imports, decorators) | [topics/common-pitfalls.md](./topics/common-pitfalls.md) |
+| Copy-paste reference sources (0.1) | [reference/README.md](./reference/README.md) |
 
 ---
 
@@ -56,7 +57,7 @@ console.log(u.modelDump());
 **V1 must include:**
 
 1. Monorepo scaffold + package exports
-2. Core: `int`, `bool`/`boolean`, `str`/`string`, `model-fields`
+2. Core: `int`, `boolean`, `string`, `model-fields`
 3. Core: `ValidationError`, `SchemaValidator` that **throws** on errors
 4. Typedantic: `reflect`, metadata, `@Field`, registry, schema builder, `BaseModel`
 5. Public `index.ts` + build so imports work
@@ -78,7 +79,9 @@ pet!: Cat | Dog;
 3. Field options: `items`, `values`/`keys`, `enum`, `literal`, `union`, `nullable`, `type: 'number'`
 4. Unit tests under `packages/*/tests/` and functional scripts under `tests/`
 
-Still later: JSON Schema, TypeAdapter, computed fields, field serializers.
+**V2 (0.2.0) also includes:** JSON Schema, TypeAdapter, `@fieldValidator` / `@modelValidator`, `@fieldSerializer` / `@computedField`, dump options.
+
+**1.0.0 also includes:** annotated types, `createModel` / `extendModel`, custom settings sources, `RootModel`.
 
 ---
 
@@ -109,13 +112,13 @@ Still later: JSON Schema, TypeAdapter, computed fields, field serializers.
 | Settings | Typing/prefix/nesting gaps | Polymorphic + prefix + nestFlat |
 | Mutable defaults | Shared `default: []` | Prefer `defaultFactory` |
 
-Details: [phases/00-overview/corrections-vs-main.md](./phases/00-overview/corrections-vs-main.md)
+The table above is the full list; there is no separate corrections page.
 
 ---
 
 ## Suggested learning order
 
-1. [why-test-ts-fails.md](./topics/why-test-ts-fails.md)
+1. [common-pitfalls.md](./topics/common-pitfalls.md)
 2. [architecture.md](./phases/00-overview/architecture.md)
 3. [tutorial.md](./tutorial.md) §1–2 scaffold
 4. Core V1 under `phases/02-core/`

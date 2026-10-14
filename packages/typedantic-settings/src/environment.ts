@@ -31,10 +31,6 @@ function parseEnvLine(line: string): Record<string, string> {
     return { [key]: value };
 }
 
-/**
- * Strip optional prefix and normalize delimiter segments into lowercase
- * path keys joined by `__` (unless caseSensitive).
- */
 export function flattenEnv(
     env: Record<string, string | undefined>,
     prefix: string,
@@ -64,6 +60,7 @@ function extractEnvKeyFromPath(key: string, delimiter: string, caseSensitive: bo
         .join('__');
 }
 
+/** Loose shape coercion — prefer coerceEnvForSchema when field type is known. */
 export function parseEnvValue(value: string): unknown {
     if (value === 'true') return true;
     if (value === 'false') return false;
@@ -83,7 +80,30 @@ export function parseEnvValue(value: string): unknown {
     return value;
 }
 
-/** Assign `a.b.c = value` into a plain object tree. */
+/**
+ * Coerce env string by target schema type (S1) — string fields keep "007" / "true".
+ */
+export function coerceEnvForSchema(value: string, schemaType?: string): unknown {
+    if (!schemaType || schemaType === 'string') return value;
+    if (schemaType === 'boolean') {
+        if (value === 'true' || value === '1') return true;
+        if (value === 'false' || value === '0') return false;
+        return value;
+    }
+    if (schemaType === 'int') {
+        if (value.trim() === '') return value;
+        const n = Number(value);
+        return Number.isInteger(n) ? n : value;
+    }
+    if (schemaType === 'number') {
+        if (value.trim() === '') return value;
+        const n = Number(value);
+        return Number.isNaN(n) ? value : n;
+    }
+    if (schemaType === 'null' || value === 'null') return value === 'null' ? null : value;
+    return parseEnvValue(value);
+}
+
 export function setNestedValue(
     target: Record<string, unknown>,
     path: string[],
@@ -119,6 +139,21 @@ export function lookupPrefixedEnv(
 
     for (const key of candidates) {
         if (env[key] !== undefined) return env[key];
+    }
+    return undefined;
+}
+
+/** Case-insensitive field name lookup (S2). */
+export function findFieldKey(
+    fields: Record<string, unknown>,
+    name: string,
+    caseSensitive: boolean,
+): string | undefined {
+    if (name in fields) return name;
+    if (caseSensitive) return undefined;
+    const lower = name.toLowerCase();
+    for (const key of Object.keys(fields)) {
+        if (key.toLowerCase() === lower) return key;
     }
     return undefined;
 }

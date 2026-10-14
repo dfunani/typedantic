@@ -1,6 +1,6 @@
 # Complex schemas (V2)
 
-How `@Field` options become CoreSchema, and how the compiler treats them.
+How `@Field` options become `BaseSchema` IR, and how the compiler + model layer treat them.
 
 Read after [../phases/02-core/06-full-engine-v2.md](../phases/02-core/06-full-engine-v2.md) and [../phases/03-typedantic/06-full-api-v2.md](../phases/03-typedantic/06-full-api-v2.md).
 
@@ -44,7 +44,7 @@ Each variant needs a `literal` (or default) on the discriminator field. An unkno
 
 ## Nested models
 
-`@Field({ type: Address })` inlines Address’s `model-fields` schema. Validated nested values are **plain objects**, not `Address` instances.
+`@Field({ type: Address })` inlines Address’s `model-fields` schema for validation. After `modelValidate`, `packages/typedantic/src/models/factories.ts` **hydrates** nested plain objects into `Address` instances via `modelConstruct` (same for `items: LineItem` arrays and discriminated `union` arms). The core engine never constructs classes — hydration is DX-only on the model package.
 
 ## Nullable vs optional vs default
 

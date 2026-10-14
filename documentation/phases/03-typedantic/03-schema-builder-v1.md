@@ -1,123 +1,109 @@
-# Schema builder V1
+# 3.3 — Schema builder (`getModelFields`)
 
-**Path:** `packages/typedantic/src/internal/schema-builder.ts`  
-Full main (V2): [../../reference/schema-builder.ts.md](../../reference/schema-builder.ts.md)
+Files:
 
-## Responsibility
+- `packages/typedantic/src/fields/builders/schema.ts` — **`getModelFields`**, type → primitive IR
+- `packages/typedantic/src/fields/builders/fields.ts` — `buildModelFieldSchema`, `inferSchemaFromType`
 
-Map runtime types + `FieldInfo` → `CoreSchema`, and assemble `model-fields`.
+There is no `collectModelFields` — the public API name is **`getModelFields`**.
 
-## V1 implementation
+## `getModelFields`
+
+`schema.ts`:
 
 ```ts
-import type { CoreSchema } from '@typedantic/core';
-import type { ConfigDict, FieldInfo, ModelFieldMeta } from './metadata.js';
-import { finalizeRegisteredFields, getRegisteredFields } from './field-registry.js';
-
-export function inferSchemaFromType(type: unknown, fieldInfo?: FieldInfo): CoreSchema {
-  const effective = fieldInfo?.type ?? type;
-  let base = buildBaseSchema(effective);
-
-  // Constraint hints can force str/int when design:type is missing
-  if (
-    fieldInfo &&
-    (fieldInfo.ge !== undefined ||
-      fieldInfo.gt !== undefined ||
-      fieldInfo.le !== undefined ||
-      fieldInfo.lt !== undefined ||
-      fieldInfo.multipleOf !== undefined)
-  ) {
-    base = { type: 'int' };
-  }
-  if (
-    fieldInfo &&
-    (fieldInfo.minLength !== undefined ||
-      fieldInfo.maxLength !== undefined ||
-      fieldInfo.pattern !== undefined)
-  ) {
-    base = { type: 'str' };
-  }
-
-  return applyFieldConstraints(base, fieldInfo);
-}
-
-function buildBaseSchema(type: unknown): CoreSchema {
-  if (type === String || type === 'string') return { type: 'str' };
-  if (type === Number || type === 'number') return { type: 'int' }; // V1 choice: Number → int
-  if (type === Boolean || type === 'boolean') return { type: 'bool' };
-  return { type: 'str' }; // safe fallback for V1 (never emit unsupported nodes)
-}
-
-function applyFieldConstraints(schema: CoreSchema, fieldInfo?: FieldInfo): CoreSchema {
-  if (!fieldInfo) return schema;
-  if (schema.type === 'str') {
-    return {
-      ...schema,
-      minLength: fieldInfo.minLength,
-      maxLength: fieldInfo.maxLength,
-      pattern: fieldInfo.pattern,
-      strict: fieldInfo.strict,
-    };
-  }
-  if (schema.type === 'int') {
-    return {
-      ...schema,
-      ge: fieldInfo.ge,
-      gt: fieldInfo.gt,
-      le: fieldInfo.le,
-      lt: fieldInfo.lt,
-      multipleOf: fieldInfo.multipleOf,
-      strict: fieldInfo.strict,
-    };
-  }
-  return schema;
-}
-
-export function collectModelFields(ctor: Function): Record<string, ModelFieldMeta> {
-  const registered = getRegisteredFields(ctor);
-  if (Object.keys(registered).length === 0) return {};
-  return finalizeRegisteredFields(ctor, (fieldInfo, designType) =>
-    inferSchemaFromType(designType ?? String, fieldInfo),
-  );
-}
-
-export function buildModelSchema(ctor: Function, config?: ConfigDict): CoreSchema {
-  const fields = collectModelFields(ctor);
-  const modelConfig = config ?? ((ctor as { modelConfig?: ConfigDict }).modelConfig ?? {});
-
-  const modelFields: Record<string, import('@typedantic/core').ModelFieldSchema> = {};
-  for (const [name, meta] of Object.entries(fields)) {
-    let schema = meta.schema;
-
-    // V1: apply defaults as schema wrappers if you already added default nodes to CoreSchema.
-    // If not, rely on ModelFieldSchema.default / defaultFactory (supported by compileModelFields).
-    modelFields[name] = {
-      schema,
-      required: meta.required,
-      alias: meta.alias,
-      default: meta.default,
-      defaultFactory: meta.defaultFactory,
-    };
-  }
-
-  return {
-    type: 'model-fields',
-    fields: modelFields,
-    modelName: ctor.name,
-    extra: modelConfig.extra ?? 'ignore',
-    strict: modelConfig.strict,
-  };
+export function getModelFields(ctor: Function): Record<string, ModelFieldMeta> {
+    const registered = getRegisteredFields(ctor);
+    if (Object.keys(registered).length === 0) return {};
+    return finalizeRegisteredFields(ctor, inferSchemaFromType);
 }
 ```
 
-### Mapping table (memorize)
+Call this before building a model-level schema or when hydrating nested unions (factories use it internally).
 
-| TS / Field type | CoreSchema |
-|-----------------|------------|
-| `String` | `{ type: 'str' }` |
-| `Number` | `{ type: 'int' }` (V1) |
-| `Boolean` | `{ type: 'bool' }` |
-| `ge`/`le` present | force `int` |
-| `minLength` present | force `str` |
+## JS constructors → IR (`getBaseSchemaFromType`)
+
+```ts
+export function getBaseSchemaFromType(type: unknown, fieldInfo?: FieldInfo): BaseSchema {
+    if (type === String || type === 'string') return { type: 'string' };
+    if (type === Number || type === 'int') return { type: 'int' };
+    if (type === 'number') return { type: 'number' };
+    if (type === Boolean || type === 'boolean') return { type: 'boolean' };
+    if (type === Date || type === 'date') return { type: 'date' };
+
+    if (!fieldInfo) return { type: 'string' };
+
+    if (isNumberConstraint(fieldInfo)) return { type: 'int' };
+    if (isStringConstraint(fieldInfo)) return { type: 'string' };
+
+    return { type: 'string' };
+}
+```
+
+Merge constraints via `getSchemaConstraints` for string/int/number schemas (`minLength`, `ge`, `strict`, etc.).
+
+## Model-level schema
+
+`fields.ts` — `buildModelFieldSchema`:
+
+```ts
+export function buildModelFieldSchema(ctor: Function, config?: ConfigDict): BaseSchema {
+    const fields = getModelFields(ctor);
+    const modelConfig = config ?? ((ctor as { modelConfig?: ConfigDict }).modelConfig ?? {});
+
+    const modelFields: Record<string, ModelFieldSchema> = {};
+    for (const [name, meta] of Object.entries(fields)) {
+        modelFields[name] = {
+            schema: meta.schema,
+            required: meta.required,
+            alias: meta.alias,
+            default: meta.default,
+            defaultFactory: meta.defaultFactory,
+        };
+    }
+
+    return {
+        type: 'model-fields',
+        fields: modelFields,
+        modelName: ctor.name,
+        extra: modelConfig.extra ?? 'ignore',
+        strict: modelConfig.strict,
+    };
+}
+```
+
+## `inferSchemaFromType` (V1 subset)
+
+For rebuild V1, ensure these paths work:
+
+- Primitives via `getBaseSchemaFromType` + constraints
+- Nested model: constructor with `modelValidate` → recursive `buildModelFieldSchema`
+- V2 in same file: `literal`, `enum`, `union`, `array`, `object`, `nullable` wrappers
+
+Detection of nested models:
+
+```ts
+function isModelConstructor(type: unknown): type is Function {
+    return typeof type === 'function'
+        && type !== String && type !== Number && type !== Boolean
+        && type !== Date && type !== Array && type !== Object
+        && typeof (type as { modelValidate?: unknown }).modelValidate === 'function';
+}
+```
+
+## Manual check
+
+```ts
+import { getModelFields } from '@typedantic/model';
+
+const fields = getModelFields(User);
+console.log(fields.email.schema); // { type: 'string', minLength: 1, ... }
+```
+
+## Checklist
+
+- [ ] Export `getModelFields` from package `index.ts`
+- [ ] `Number` → `{ type: 'int' }`, `'number'` → `{ type: 'number' }`
+- [ ] `buildModelFieldSchema` passes `extra` / `strict` from `modelConfig`
 
 Next: [04-base-model-v1.md](./04-base-model-v1.md)

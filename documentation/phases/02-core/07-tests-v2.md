@@ -32,9 +32,9 @@ const v = new SchemaValidator({ type: 'int', ge: 1 });
 expect(() => v.validateModel(0)).toThrow(ValidationError);
 // message contains "greater than or equal to 1"
 
-// missing field loc includes the name
+// missing field location includes the field name (not parent path only)
 schema: model-fields { name: required string }
-validateModel({}) → errors[].location includes ['name']
+validateModel({}) → errors[].location includes 'name'
 
 // discriminator
 { type: 'union', discriminator: 'kind', choices: [cat, dog] }

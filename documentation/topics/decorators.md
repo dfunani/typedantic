@@ -20,8 +20,8 @@ Typedantic uses **legacy** (`experimentalDecorators`). Do not mix with stage-3.
 1. Class body evaluated
 2. `Field(options)` returns a decorator function
 3. That function receives `(target, propertyKey)`
-4. Reads `design:type`, calls `registerModelField`
-5. Later `BaseModel.modelValidate` builds CoreSchema from registry
+4. Reads `design:type` via `fields/properties.ts`, calls `registerModelField`
+5. Later `BaseModel.modelValidate` builds `BaseSchema` from registry (`getModelFields` / `buildModelFieldSchema`)
 
 **Nothing validates in the decorator** — decorators only collect metadata.
 

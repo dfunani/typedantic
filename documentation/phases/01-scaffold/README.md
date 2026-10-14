@@ -1,21 +1,45 @@
-# Phase 1 — Monorepo scaffolding
+# Phase 1 — Monorepo scaffold
 
-**Goal:** empty packages install, build, and typecheck before any real logic.
+Goal: a Bun + Turbo workspace that builds three publishable packages and runs CI the same way as this repo.
 
-## Create directories
+See [architecture](../00-overview/architecture.md) for how the packages relate. If imports fail after edits, read [common pitfalls](../../topics/common-pitfalls.md).
 
-```bash
-mkdir typedantic && cd typedantic
-git init
-mkdir -p packages/typedantic-core/src/{schema,compiler,errors,validator,serializer}
-mkdir -p packages/typedantic/src/{internal,fields,config,validators,serializers,types,models,json-schema}
-mkdir -p packages/typedantic-settings/src
-mkdir -p .github/workflows
+## Package map (folder → npm name)
+
+| Directory | npm package | Role |
+|-----------|-------------|------|
+| `packages/typedantic-core` | `@typedantic/core` | Schema IR, compiler, validator (no decorators) |
+| `packages/typedantic` | `@typedantic/model` | `BaseModel`, `@Field`, `modelConfig` |
+| `packages/typedantic-settings` | `@typedantic/settings` | `BaseSettings`, env / `.env` loading |
+
+**0.1 public surface:** only what each package exports from `src/index.ts`. Do not treat `serializer/`, extra validators, or JSON Schema helpers as part of the rebuild target unless you are following Phase 2 V2 chapters.
+
+## Root layout
+
+Create (or mirror) this tree:
+
+```
+typedantic/
+├── package.json              # workspaces, root scripts
+├── bun.lock
+├── turbo.json
+├── tsconfig.json             # references packages (optional)
+├── tsconfig.base.json        # shared compilerOptions
+├── vitest.config.ts          # packages/**/tests/**/*.test.ts
+├── .github/workflows/ci.yml
+├── tests/
+│   └── basic.ts              # functional smoke (no root test.ts)
+└── packages/
+    ├── typedantic-core/
+    ├── typedantic/
+    └── typedantic-settings/
 ```
 
-For **V1 only**, you can skip `typedantic-settings` and some typedantic subfolders until later — but creating them now matches main.
+There is **no** `internal/`, top-level `validators/`, or `serializers/` package. Validation lives in `@typedantic/core`; model DX lives in `@typedantic/model`.
 
 ## Root `package.json`
+
+Use Bun workspaces and these scripts (match live repo):
 
 ```json
 {
@@ -23,48 +47,40 @@ For **V1 only**, you can skip `typedantic-settings` and some typedantic subfolde
   "private": true,
   "type": "module",
   "workspaces": ["packages/*"],
+  "packageManager": "bun@1.3.14",
   "scripts": {
     "build": "turbo run build",
     "test": "vitest run",
-    "test:watch": "vitest",
+    "functional-test": "bun run --parallel tests/*.ts",
     "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "pack:dry": "bun pm pack --dry-run --cwd packages/typedantic-core && bun pm pack --dry-run --cwd packages/typedantic && bun pm pack --dry-run --cwd packages/typedantic-settings",
+    "publish:packages": "bun run build && bun run typecheck && bun run test && bun run functional-test && bun publish --access public --cwd packages/typedantic-core && bun publish --access public --cwd packages/typedantic && bun publish --access public --cwd packages/typedantic-settings"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "reflect-metadata": "^0.2.2",
     "tsup": "^8.3.5",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   },
-  "engines": { "node": ">=20" },
-  "packageManager": "bun@1.3.14"
+  "engines": { "node": ">=20" }
 }
 ```
 
-`packageManager` pins Bun for Corepack / CI. If you use pnpm or npm instead, you can omit it or set your own tool string.
-
-## `pnpm-workspace.yaml` (pnpm users)
-
-```yaml
-packages:
-  - 'packages/*'
-```
-
-## `turbo.json`
+Root may depend on workspace packages for functional tests:
 
 ```json
-{
-  "$schema": "https://turbo.build/schema.json",
-  "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
-    "typecheck": { "dependsOn": ["^build"] },
-    "clean": { "cache": false }
-  }
+"dependencies": {
+  "@typedantic/model": "workspace:*",
+  "@typedantic/settings": "workspace:*"
 }
 ```
 
-## `tsconfig.base.json` (main style — use this)
+## Shared TypeScript (`tsconfig.base.json`)
+
+Decorators and metadata are required for `@typedantic/model`:
 
 ```json
 {
@@ -72,27 +88,130 @@ packages:
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "useDefineForClassFields": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "useDefineForClassFields": false
   }
 }
 ```
 
-Deep dive: [../../topics/nodenext-js-extensions.md](../../topics/nodenext-js-extensions.md)
+Each package extends this with `"rootDir": "src"`, `"outDir": "dist"`, `"include": ["src"]`.
 
-## `vitest.config.ts`
+**Settings package:** use a normal `tsconfig.json` that extends `../../tsconfig.base.json`. Do **not** add `compilerOptions.paths` hacks to reach model source — depend on `@typedantic/model` and build `dist` like the other packages.
+
+## Turbo (`turbo.json`)
+
+```json
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "clean": { "cache": false }
+  }
+}
+```
+
+## Per-package skeleton
+
+### `@typedantic/core` — live `src/` tree (build in Phase 2)
+
+```
+packages/typedantic-core/src/
+├── schema/
+│   ├── types.ts                    # BaseSchema union
+│   └── models/
+│       ├── primitives.ts
+│       ├── fields.ts
+│       ├── configurations.ts
+│       └── complex/                # arrays, objects, unions, … (V2 expands here)
+├── errors/
+│   ├── validation-error.ts
+│   └── utils.ts
+├── factories/
+│   ├── validation-error.ts
+│   └── errors/                     # message templates for compilers
+├── compiler/
+│   ├── compile.ts                  # compileValidator switch
+│   ├── primitives/                 # int, string, boolean, …
+│   ├── complex/
+│   └── fields/
+│       └── model-fields.ts
+├── validator/
+│   └── schema.ts                   # SchemaValidator
+├── serializer/
+│   └── schema-serializer.ts        # exists in tree; NOT exported in 0.1
+└── index.ts
+```
+
+Package scripts:
+
+```json
+{
+  "name": "@typedantic/core",
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit"
+  }
+}
+```
+
+### `@typedantic/model` — live `src/` tree (Phase 3)
+
+```
+packages/typedantic/src/
+├── fields/
+│   ├── properties.ts
+│   ├── types.ts
+│   ├── registry.ts
+│   ├── decorator.ts
+│   └── builders/
+│       ├── schema.ts               # getModelFields
+│       └── fields.ts               # buildModelFieldSchema
+├── config/
+│   └── model-config.ts
+├── models/
+│   ├── factories.ts                # schema cache, hydration
+│   └── base-model.ts
+└── index.ts
+```
+
+Dependencies:
+
+```json
+{
+  "name": "@typedantic/model",
+  "dependencies": {
+    "@typedantic/core": "workspace:*",
+    "reflect-metadata": "^0.2.2"
+  },
+  "peerDependencies": {
+    "reflect-metadata": ">=0.2.0"
+  }
+}
+```
+
+### `@typedantic/settings` — live `src/` tree (Phase 4)
+
+```
+packages/typedantic-settings/src/
+├── config.ts
+├── environment.ts
+└── index.ts
+```
+
+Depends only on `@typedantic/model` (workspace). No path mapping to model `src/`.
+
+## Vitest
+
+Root `vitest.config.ts`:
 
 ```ts
 import { defineConfig } from 'vitest/config';
@@ -106,139 +225,42 @@ export default defineConfig({
 });
 ```
 
-## `.gitignore`
+Unit tests live under each package’s `tests/` directory. Functional smoke lives at repo root `tests/basic.ts` (see Phase 3 chapter 5).
 
-```
-node_modules/
-dist/
-*.tsbuildinfo
-.DS_Store
-coverage/
-.turbo/
-.env
-*.tgz
-```
+## CI (`.github/workflows/ci.yml`)
 
-## Package manifests
-
-### `packages/typedantic-core/package.json`
-
-```json
-{
-  "name": "@typedantic/core",
-  "version": "0.1.0",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
-  },
-  "files": ["dist"],
-  "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  },
-  "engines": { "node": ">=20" },
-  "license": "MIT"
-}
+```yaml
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run functional-test
 ```
 
-### `packages/typedantic/package.json`
-
-```json
-{
-  "name": "typedantic",
-  "version": "0.1.0",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
-  },
-  "files": ["dist"],
-  "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "@typedantic/core": "workspace:*",
-    "reflect-metadata": "^0.2.2"
-  },
-  "peerDependencies": { "reflect-metadata": ">=0.2.0" },
-  "peerDependenciesMeta": {
-    "reflect-metadata": { "optional": true }
-  },
-  "engines": { "node": ">=20" },
-  "license": "MIT"
-}
-```
-
-### `packages/typedantic-settings/package.json`
-
-```json
-{
-  "name": "typedantic-settings",
-  "version": "0.1.0",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
-  },
-  "files": ["dist"],
-  "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  },
-  "dependencies": { "typedantic": "workspace:*" },
-  "peerDependencies": { "reflect-metadata": ">=0.2.0" },
-  "engines": { "node": ">=20" },
-  "license": "MIT"
-}
-```
-
-## Each package `tsconfig.json`
-
-```json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
-  "include": ["src"]
-}
-```
-
-Settings adds:
-
-```json
-"paths": { "typedantic": ["../typedantic/dist/index.d.ts"] }
-```
-
-## Placeholder entrypoints
-
-Create `src/index.ts` in each package:
-
-```ts
-export {};
-```
-
-## Install & checkpoint
+## First commands
 
 ```bash
 bun install
 bun run build
 bun run typecheck
+bun run test
+bun run functional-test   # after Phase 3 smoke exists
 ```
 
-```bash
-# pnpm
-pnpm install && pnpm build && pnpm typecheck
-# npm
-npm install && npm run build && npm run typecheck
-```
+## Next
 
-**Expected:** empty `dist/` folders, no errors.
-
-Deep dive: [../../topics/workspaces-and-imports.md](../../topics/workspaces-and-imports.md)
+- [Phase 2 — `@typedantic/core`](../02-core/README.md)
+- Pitfalls: [common-pitfalls.md](../../topics/common-pitfalls.md)

@@ -15,8 +15,11 @@ export function parseString(value: unknown): unknown {
 
 export function parseNumber(value: unknown): unknown {
     if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    // Reject empty / whitespace — Number("") === 0 (B5).
+    if (trimmed === '') return value;
 
-    const parsed = Number(value);
+    const parsed = Number(trimmed);
     if (!Number.isNaN(parsed) && Number.isInteger(parsed)) {
         return parsed;
     }
@@ -26,8 +29,10 @@ export function parseNumber(value: unknown): unknown {
 
 export function parseFloatNumber(value: unknown): unknown {
     if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    if (trimmed === '') return value;
 
-    const parsed = Number(value);
+    const parsed = Number(trimmed);
     if (!Number.isNaN(parsed)) {
         return parsed;
     }

@@ -1,71 +1,93 @@
-# Public exports + V1 smoke test
+# 3.5 — Public exports and smoke test
 
-## `packages/typedantic/src/index.ts` (V1)
+## Package exports (`packages/typedantic/src/index.ts`)
+
+0.1 **exact** surface:
 
 ```ts
-export { BaseModel, ValidationError } from './models/base-model.js';
-export { Field } from './fields/field.js';
+export { BaseModel } from './models/base-model.js';
+export { Field } from './fields/decorator.js';
 export { modelConfig, getModelConfig } from './config/model-config.js';
-export type { FieldInfo, ConfigDict } from './internal/metadata.js';
-export type { CoreSchema, ValidationErrorDetail } from '@typedantic/core';
-export { SchemaValidator, validate } from '@typedantic/core';
+export type { FieldInfo, ConfigDict } from './fields/types.js';
+export { getModelFields } from './fields/builders/schema.js';
+export { ValidationError } from '@typedantic/core';
 ```
 
-## Build
+**Not exported** (even if files exist elsewhere):
+
+- TypeAdapter
+- Field / model validator decorators
+- JSON Schema export
+- SchemaSerializer
+
+Core’s serializer under `packages/typedantic-core/src/serializer/` is likewise not re-exported from `@typedantic/core` in 0.1.
+
+## Build and test
 
 ```bash
-bun run --filter @typedantic/core build
-bun run --filter typedantic build
+bun run build
+bun run test -- packages/typedantic
 ```
 
-## Smoke test — replace root `test.ts`
+Package tests live in `packages/typedantic/tests/` (`base-model.test.ts`, `field-schema.test.ts`, …).
+
+## Functional smoke — `tests/basic.ts`
+
+Root script: `"functional-test": "bun run --parallel tests/*.ts"`.
+
+There is **no** root `test.ts`. Smoke is **`tests/basic.ts`**:
 
 ```ts
 import 'reflect-metadata';
 import { BaseModel, Field, modelConfig } from '@typedantic/model';
 
-@modelConfig({ extra: 'forbid' })
+@modelConfig({ extra: 'ignore' })
 class Test extends BaseModel {
-  @Field({ type: Number, ge: 0 })
-  flag!: number;
+    @Field({ type: Number, ge: 0, strict: false })
+    flag!: number;
 
-  @Field({ type: String, minLength: 1 })
-  name!: string;
+    @Field({ type: String, minLength: 1 })
+    name!: string;
 
-  @Field({ type: Boolean })
-  active!: boolean;
+    @Field({ type: Boolean })
+    active!: boolean;
 }
 
-const ok = Test.modelValidate({ flag: 10, name: 'Ada', active: true });
+const ok = Test.modelValidate({ flag: 10, name: 'Ada', active: true, extra_field: 'ignore' });
 console.log(ok.modelDump());
 
 try {
-  Test.modelValidate({ flag: 'nope', name: 'Ada', active: true });
+    Test.modelValidate({ flag: '1', name: 'Ada', active: true });
 } catch (e) {
-  console.log('expected error', e);
+    console.log('expected error', e);
 }
 ```
 
-Run (after workspace link resolves `typedantic`):
+Run:
 
 ```bash
-bun test.ts
+bun run functional-test
 ```
 
-If package name resolution fails from repo root, temporarily:
+CI runs the same sequence after unit tests (see [Phase 1 CI](../01-scaffold/README.md)).
+
+## Consumer imports
 
 ```ts
-import { BaseModel, Field } from './packages/typedantic/src/index.ts';
+import 'reflect-metadata';
+import { BaseModel, Field, modelConfig, getModelFields } from '@typedantic/model';
+import { ValidationError } from '@typedantic/core'; // or from @typedantic/model
 ```
 
-…but the **goal** is package imports.
+Do not import from `packages/typedantic/src/...` in app code.
 
-## Acceptance for Milestone V1
+## Pitfalls
 
-- [ ] Core tests for int/bool/str/model-fields pass
-- [ ] `Test.modelValidate` returns instance with fields
-- [ ] Bad types throw `ValidationError` with `json()` → `{ detail: [...] }`
-- [ ] `extra: 'forbid'` rejects unknown keys
-- [ ] `bun run build` succeeds for core + typedantic
+- Stale `dist/` after core changes → [common-pitfalls.md](../../topics/common-pitfalls.md)
+- Missing decorator tsconfig flags
+- Forgetting `reflect-metadata` side effect import
 
-Next: [06-full-api-v2.md](./06-full-api-v2.md) or [../04-settings/README.md](../04-settings/README.md)
+## Next phases
+
+- [Phase 4 — `@typedantic/settings`](../04-settings/README.md)
+- [Phase 5 — Ship](../05-ship/README.md)

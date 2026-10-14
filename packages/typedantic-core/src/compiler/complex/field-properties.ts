@@ -72,31 +72,37 @@ export function cloneDefault(value: unknown): unknown {
     return value;
 }
 
+/** Returns true when this choice should be skipped (tag does not match). */
 function validateUnionTagIndex(tag: unknown, schema: UnionSchema, index: number): boolean {
     const choice = schema.choices[index];
     if (choice.type === 'model-fields') {
         const modelChoice = choice as Extract<BaseSchema, { type: 'model-fields' }>;
         const discField = modelChoice.fields[schema.discriminator!];
-        if (discField && validateUnionTag(tag, discField)) {
-            true;
+        if (discField && tagDoesNotMatch(tag, discField)) {
+            return true;
         }
     }
     return false;
 }
 
-function validateUnionTag(tag: unknown, discField: ModelFieldSchema): boolean {
-    if (!discField) return false;
+/** Returns true when the discriminator tag does not match this field schema. */
+function tagDoesNotMatch(tag: unknown, discField: ModelFieldSchema): boolean {
     const discSchema = discField.schema;
 
     switch (discSchema.type) {
-        case 'literal':
+        case 'literal': {
             const literal = discSchema as Extract<BaseSchema, { type: 'literal' }>;
-            if (!literal.expected.includes(tag)) return true;
-            break;
-        case 'default':
+            return !literal.expected.includes(tag);
+        }
+        case 'enum': {
+            const enm = discSchema as Extract<BaseSchema, { type: 'enum' }>;
+            return !enm.members.includes(tag as string);
+        }
+        case 'default': {
             const defSchema = discSchema as Extract<BaseSchema, { type: 'default' }>;
-            if (defSchema.defaultValue !== tag) return true;
-            break;
+            return defSchema.defaultValue !== tag;
+        }
+        default:
+            return false;
     }
-    return false;
 }

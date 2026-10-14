@@ -1,20 +1,37 @@
-import { resolve } from 'node:path';
-import { BaseModel, getModelFields, modelConfig } from '@typedantic/model';
-import {
-    loadEnvFile,
-    flattenEnv,
-    parseEnvValue,
-    setNestedValue,
-    lookupPrefixedEnv,
-} from './environment.js';
+import { BaseModel, modelConfig } from '@typedantic/model';
 import type { SettingsConfigDict } from './config.js';
+import {
+    SETTINGS_CUSTOMISE_SOURCES_KEY,
+    defaultSettingsSources,
+    mergeSettingsSources,
+    resolveSettingsSources,
+    initSettingsSource,
+    envSettingsSource,
+    dotenvSettingsSource,
+    jsonFileSettingsSource,
+    secretsDirectorySettingsSource,
+    envMapToSettingsData,
+    type SettingsSource,
+    type SettingsSourceContext,
+    type CustomiseSourcesFn,
+} from './sources.js';
 
 export type { SettingsConfigDict } from './config.js';
+export type { SettingsSource, SettingsSourceContext, CustomiseSourcesFn };
+export {
+    initSettingsSource,
+    envSettingsSource,
+    dotenvSettingsSource,
+    jsonFileSettingsSource,
+    secretsDirectorySettingsSource,
+    envMapToSettingsData,
+    defaultSettingsSources,
+    mergeSettingsSources,
+};
 
-type FieldMeta = {
-    name: string;
-    alias?: string;
-    fieldInfo?: { alias?: string };
+export type SettingsValidateOptions = {
+    /** Explicit field values (highest priority by default). */
+    initData?: Record<string, unknown>;
 };
 
 export abstract class BaseSettings extends BaseModel {
@@ -29,66 +46,45 @@ export abstract class BaseSettings extends BaseModel {
             string,
             string | undefined
         >,
+        options: SettingsValidateOptions = {},
     ): InstanceType<T> {
         const config = (this as { modelConfig?: SettingsConfigDict }).modelConfig ?? {};
-        const envPrefix = config.envPrefix ?? '';
-        const delimiter = config.envNestedDelimiter ?? '__';
-        const caseSensitive = config.caseSensitive ?? false;
-        const envFile = config.envFile !== false ? (config.envFile ?? '.env') : null;
+        const ctx: SettingsSourceContext = {
+            settingsCls: this,
+            config,
+            env,
+            initData: options.initData ?? {},
+        };
 
-        // Precedence: explicit env arg > process.env overlay already in `env` >
-        // .env file (file loses to explicit/process keys).
-        let merged: Record<string, string | undefined> = { ...env };
-        if (envFile) {
-            const fileEnv = loadEnvFile(resolve(process.cwd(), envFile));
-            merged = { ...fileEnv, ...merged };
+        let sources = resolveSettingsSources(this);
+        // Secrets dir from config, appended as lowest priority when set.
+        if (config.secretsDir) {
+            sources = [...sources, secretsDirectorySettingsSource(config.secretsDir)];
         }
 
-        const flat = flattenEnv(merged, envPrefix, delimiter, caseSensitive);
-        getModelFields(this);
-        const fields =
-            (this as { modelFields?: Record<string, FieldMeta> }).modelFields ?? {};
-
-        const data: Record<string, unknown> = {};
-
-        // Nested delimiter paths: DB__HOST → { db: { host } } (after prefix strip).
-        for (const [flatKey, raw] of Object.entries(flat)) {
-            const segments = flatKey.split('__').filter(Boolean);
-            if (segments.length <= 1) continue;
-            const root = segments[0]!;
-            if (!(root in fields)) continue;
-            setNestedValue(data, segments, parseEnvValue(raw));
-        }
-
-        for (const [name, meta] of Object.entries(fields)) {
-            if (name in data) continue;
-
-            const alias = meta.fieldInfo?.alias ?? meta.alias ?? name;
-            const fromPrefix = lookupPrefixedEnv(merged, envPrefix, alias, caseSensitive);
-            if (fromPrefix !== undefined) {
-                data[name] = parseEnvValue(fromPrefix);
-                continue;
-            }
-
-            // Flat key after prefix strip (e.g. APP_HOST → host with prefix APP_).
-            const flatName = caseSensitive ? alias : alias.toLowerCase();
-            if (flat[flatName] !== undefined) {
-                data[name] = parseEnvValue(flat[flatName]!);
-                continue;
-            }
-
-            // Unprefixed uppercase / lowercase direct keys when no prefix.
-            if (!envPrefix) {
-                const upper = alias.toUpperCase();
-                const direct = merged[alias] ?? merged[upper] ?? merged[alias.toLowerCase()];
-                if (direct !== undefined) data[name] = parseEnvValue(direct);
-            }
-        }
-
+        const data = mergeSettingsSources(sources, ctx);
         return (this as unknown as typeof BaseModel).modelValidate(data) as InstanceType<T>;
     }
 }
 
 export function settingsConfig(config: SettingsConfigDict): ClassDecorator {
     return modelConfig(config);
+}
+
+/**
+ * Customise the settings source pipeline (Pydantic-style).
+ * Callback receives default sources and must return the ordered list
+ * (highest priority first).
+ *
+ * @example
+ * @settingsCustomiseSources((init, env, dotenv) => [init, env, dotenv, jsonFileSettingsSource('settings.json')])
+ * class AppSettings extends BaseSettings { ... }
+ */
+export function settingsCustomiseSources(customise: CustomiseSourcesFn): ClassDecorator {
+    return (target) => {
+        Object.defineProperty(target, SETTINGS_CUSTOMISE_SOURCES_KEY, {
+            value: customise,
+            configurable: true,
+        });
+    };
 }

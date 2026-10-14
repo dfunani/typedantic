@@ -1,70 +1,64 @@
-# Reference: SchemaValidator
+# `packages/typedantic-core/src/validator/schema.ts`
 
-Copied from `main`: `packages/typedantic-core/src/validator/schema-validator.ts`
+**Package:** `@typedantic/core`  
+**Note:** Live source (0.1) — authoritative for rebuild. Prefer phase pages for teaching order.
 
-```typescript
+```ts
 import { compileValidator } from '../compiler/compile.js';
 import { ValidationError } from '../errors/validation-error.js';
-import type { CoreSchema, ValidateOptions, ValidationErrorDetail } from '../schema/types.js';
+import { createValidationErrorDetail } from '../factories/validation-error.js';
+import { ValidationConfigSchema, ValidationErrorDetailSchema } from '../schema/models/configurations.js';
+import type { BaseSchema } from '../schema/types.js';
 
 export class SchemaValidator {
-  private readonly validateFn: ReturnType<typeof compileValidator>;
-  private lastErrors: ValidationErrorDetail[] = [];
+    private readonly validatorFunction: ReturnType<typeof compileValidator>;
+    private readonly errors: ValidationErrorDetailSchema[] = [];
 
-  constructor(
-    private readonly schema: CoreSchema,
-    private readonly config: ValidateOptions = {},
-  ) {
-    this.validateFn = compileValidator(schema);
-  }
-
-  validatePython(input: unknown, options?: ValidateOptions): unknown {
-    const errors: ValidationErrorDetail[] = [];
-    const mergedConfig = { strict: options?.strict ?? this.config.strict };
-
-    const result = this.validateFn(input, {
-      path: [],
-      config: mergedConfig,
-      errors,
-    });
-
-    this.lastErrors = errors;
-
-    if (errors.length > 0) {
-      throw new ValidationError(errors);
+    constructor(
+        private readonly schema: BaseSchema,
+        private readonly config: ValidationConfigSchema = {},
+    ) {
+        this.validatorFunction = compileValidator(schema);
     }
 
-    return result;
-  }
+    validateModel(input: unknown, config?: ValidationConfigSchema): unknown {
+        const strict = config?.strict ?? this.config.strict;
+        const errors: ValidationErrorDetailSchema[] = [];
 
-  validateJson(json: string, options?: ValidateOptions): unknown {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(json);
-    } catch {
-      throw new ValidationError([
-        {
-          type: 'json_invalid',
-          loc: [],
-          msg: 'Invalid JSON',
-          input: json,
-        },
-      ]);
+        const result = this.validatorFunction(input, {
+            path: [],
+            config: { strict },
+            errors,
+        });
+
+        this.errors.length = 0;
+        this.errors.push(...errors);
+
+        if (errors.length > 0) {
+            throw new ValidationError([...errors]);
+        }
+
+        return result;
     }
-    return this.validatePython(parsed, options);
-  }
 
-  getErrors(): ValidationErrorDetail[] {
-    return this.lastErrors;
-  }
+    validateJson(json: string, config?: ValidationConfigSchema): unknown {
+        const strict = config?.strict ?? this.config.strict;
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(json);
+        } catch {
+            const error = createValidationErrorDetail('json_invalid', [], 'Invalid JSON', json, { strict });
+            throw new ValidationError([error]);
+        }
+        return this.validateModel(parsed, config);
+    }
 
-  getSchema(): CoreSchema {
-    return this.schema;
-  }
+    getErrors(): ValidationErrorDetailSchema[] {
+        return this.errors;
+    }
+
+    getSchema(): BaseSchema {
+        return this.schema;
+    }
 }
-
-export function validate(schema: CoreSchema, input: unknown, options?: ValidateOptions): unknown {
-  return new SchemaValidator(schema, options).validatePython(input, options);
-}
-
 ```

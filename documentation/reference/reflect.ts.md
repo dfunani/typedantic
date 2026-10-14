@@ -1,28 +1,49 @@
-# Reference: reflect.ts
+# `packages/typedantic/src/fields/properties.ts`
 
-Copied from `main`: `packages/typedantic/src/internal/reflect.ts`
+**Package:** `@typedantic/model`  
+**Note:** Live source (0.1) — authoritative for rebuild. Prefer phase pages for teaching order.
 
-```typescript
+Previously documented as internal reflect helpers; live 0.1 uses `fields/properties.ts` with `reflect-metadata`.
+
+```ts
 import 'reflect-metadata';
+import type { ModelFieldMeta } from './types.js';
+import { MODEL_FIELDS_REGISTRY } from './types.js';
 
 type ReflectMetadata = {
-  getMetadata?(key: string, target: object, propertyKey?: string | symbol): unknown;
-  defineMetadata?(key: string, value: unknown, target: object, propertyKey?: string | symbol): void;
+    getMetadata?(key: string | symbol, target: object, propertyKey?: string | symbol): unknown;
+    defineMetadata?(
+        key: string | symbol,
+        value: unknown,
+        target: object,
+        propertyKey?: string | symbol,
+    ): void;
 };
 
 const reflect = Reflect as ReflectMetadata;
 
-export function getMetadata(key: string | symbol, target: object, propertyKey?: string | symbol): unknown {
-  return reflect.getMetadata?.(key as string, target, propertyKey);
+export function getFieldPropertyMetadata(
+    key: string | symbol,
+    target: object,
+    propertyKey?: string | symbol,
+): unknown {
+    return reflect.getMetadata?.(key, target, propertyKey);
 }
 
-export function defineMetadata(
-  key: string | symbol,
-  value: unknown,
-  target: object,
-  propertyKey?: string | symbol,
+export function getRegisteredFields(ctor: Function): Record<string, ModelFieldMeta> {
+    return (getFieldPropertyMetadata(MODEL_FIELDS_REGISTRY, ctor) as Record<string, ModelFieldMeta>) ?? {};
+}
+
+export function defineFieldPropertyMetadata(
+    key: string | symbol,
+    value: unknown,
+    target: object,
+    propertyKey?: string | symbol,
 ): void {
-  reflect.defineMetadata?.(key as string, value, target, propertyKey);
+    reflect.defineMetadata?.(key, value, target, propertyKey);
 }
 
+export function defineFieldProperty(ctor: object, name: string, value: unknown): void {
+    Object.defineProperty(ctor, name, { value, writable: true, configurable: true });
+}
 ```

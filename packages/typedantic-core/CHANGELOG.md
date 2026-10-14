@@ -5,17 +5,46 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-10-14
+
+- JSON dump calls `toJSON()` when present (supports `SecretStr`-style values)
+
+## [0.2.0] - 2026-10-14
+
+Milestone **V2 final** — serializers, validators, computed fields, JSON Schema, and TypeAdapter are included (no longer deferred).
+
+### Added (`@typedantic/core`)
+
+- `SchemaSerializer` / `serializeValue` with dump options (`mode`, `byAlias`, `excludeNone`, `excludeUnset`, `include`/`exclude`)
+- `toJsonSchema()` JSON Schema generator (`$defs` / `$ref`)
+- Dual ValidationError JSON keys: `location`/`message` and FastAPI `loc`/`msg`/`ctx`
+
+### Added (`@typedantic/model`)
+
+- `@fieldValidator` / `@modelValidator` (before / after / wrap / plain)
+- `@fieldSerializer` / `@modelSerializer` / `@computedField`
+- `modelValidateJson`, `modelCopy`, validating `constructor(data)`, `modelJsonSchema`
+- `modelDump` / `modelDumpJson` options
+- `TypeAdapter` (`validate`, `validateJson`, `dump`, `dumpJson`)
+- Field options: `validationAlias`, `serializationAlias`, `exclude`, `repr`
+- Config: `populateByName`, live `validateAssignment` (Proxy)
+
+### Fixed
+
+- Subclass field registry no longer mutates parent (B1)
+- Discriminated union tag pre-filter (B2)
+- Model `strict` propagates to child fields (B3)
+- Union hydration for literal/enum discriminators (B4)
+- Empty-string numeric coercion rejected (B5)
+- `function-after` local error scoping + thrown errors → validation errors (B7)
+- Finalized field registry cache (B10)
+- Core schema interfaces exported as types (B13)
+- Settings string coercion by field type; camelCase nested env keys (S1/S2)
+
+### Packages
+
+Published names unchanged: `@typedantic/core`, `@typedantic/model`, `@typedantic/settings`.
+
 ## [0.1.0] - 2026-09-25
 
-### Added
-
-- `@typedantic/core` — zero-dependency schema IR, compiler, and `SchemaValidator`
-- `@typedantic/model` — Pydantic-style `BaseModel`, `@Field`, and `modelConfig` (decorators)
-- `@typedantic/settings` — `BaseSettings` / `settingsConfig` with env + `.env` loading
-- ESM-only packages targeting Node.js ≥ 20
-- Unit tests (Vitest) and functional smoke scripts
-
-### Notes
-
-- Public npm name is scoped (`@typedantic/*`) because the unscoped name `typedantic` is already taken on the registry.
-- 0.1 does **not** include JSON Schema export, `TypeAdapter`, field/model validators, computed fields, or custom serializers. Those are planned for later minor releases.
+Initial public surface: schema IR, BaseModel / Field, settings env loading.

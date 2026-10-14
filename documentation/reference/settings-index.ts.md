@@ -1,123 +1,103 @@
-# Reference: BaseSettings
+# `packages/typedantic-settings/src/index.ts`
 
-Copied from `main`: `packages/typedantic-settings/src/index.ts`
+**Package:** `@typedantic/settings`  
+**Note:** Live source (0.1) — authoritative for rebuild. Prefer phase pages for teaching order.
 
-```typescript
-import { readFileSync, existsSync } from 'node:fs';
+Related: [`settings-config.ts.md`](./settings-config.ts.md), [`settings-environment.ts.md`](./settings-environment.ts.md).
+
+```ts
 import { resolve } from 'node:path';
-import { BaseModel, Field, modelConfig, collectModelFields } from '@typedantic/model';
-import type { ConfigDict } from '@typedantic/model';
+import { BaseModel, getModelFields, modelConfig } from '@typedantic/model';
+import {
+    loadEnvFile,
+    flattenEnv,
+    parseEnvValue,
+    setNestedValue,
+    lookupPrefixedEnv,
+} from './environment.js';
+import type { SettingsConfigDict } from './config.js';
 
-export interface SettingsConfigDict extends ConfigDict {
-  envPrefix?: string;
-  envFile?: string | false;
-  envNestedDelimiter?: string;
-  caseSensitive?: boolean;
+export type { SettingsConfigDict } from './config.js';
+
+type FieldMeta = {
+    name: string;
+    alias?: string;
+    fieldInfo?: { alias?: string };
+};
+
+export abstract class BaseSettings extends BaseModel {
+    static modelConfig: SettingsConfigDict = {
+        extra: 'ignore',
+        populateByName: true,
+    };
+
+    static settingsValidate<T extends typeof BaseSettings>(
+        this: T,
+        env: Record<string, string | undefined> = process.env as Record<
+            string,
+            string | undefined
+        >,
+    ): InstanceType<T> {
+        const config = (this as { modelConfig?: SettingsConfigDict }).modelConfig ?? {};
+        const envPrefix = config.envPrefix ?? '';
+        const delimiter = config.envNestedDelimiter ?? '__';
+        const caseSensitive = config.caseSensitive ?? false;
+        const envFile = config.envFile !== false ? (config.envFile ?? '.env') : null;
+
+        // Precedence: explicit env arg > process.env overlay already in `env` >
+        // .env file (file loses to explicit/process keys).
+        let merged: Record<string, string | undefined> = { ...env };
+        if (envFile) {
+            const fileEnv = loadEnvFile(resolve(process.cwd(), envFile));
+            merged = { ...fileEnv, ...merged };
+        }
+
+        const flat = flattenEnv(merged, envPrefix, delimiter, caseSensitive);
+        getModelFields(this);
+        const fields =
+            (this as { modelFields?: Record<string, FieldMeta> }).modelFields ?? {};
+
+        const data: Record<string, unknown> = {};
+
+        // Nested delimiter paths: DB__HOST → { db: { host } } (after prefix strip).
+        for (const [flatKey, raw] of Object.entries(flat)) {
+            const segments = flatKey.split('__').filter(Boolean);
+            if (segments.length <= 1) continue;
+            const root = segments[0]!;
+            if (!(root in fields)) continue;
+            setNestedValue(data, segments, parseEnvValue(raw));
+        }
+
+        for (const [name, meta] of Object.entries(fields)) {
+            if (name in data) continue;
+
+            const alias = meta.fieldInfo?.alias ?? meta.alias ?? name;
+            const fromPrefix = lookupPrefixedEnv(merged, envPrefix, alias, caseSensitive);
+            if (fromPrefix !== undefined) {
+                data[name] = parseEnvValue(fromPrefix);
+                continue;
+            }
+
+            // Flat key after prefix strip (e.g. APP_HOST → host with prefix APP_).
+            const flatName = caseSensitive ? alias : alias.toLowerCase();
+            if (flat[flatName] !== undefined) {
+                data[name] = parseEnvValue(flat[flatName]!);
+                continue;
+            }
+
+            // Unprefixed uppercase / lowercase direct keys when no prefix.
+            if (!envPrefix) {
+                const upper = alias.toUpperCase();
+                const direct = merged[alias] ?? merged[upper] ?? merged[alias.toLowerCase()];
+                if (direct !== undefined) data[name] = parseEnvValue(direct);
+            }
+        }
+
+        return (this as unknown as typeof BaseModel).modelValidate(data) as InstanceType<T>;
+    }
 }
 
 export function settingsConfig(config: SettingsConfigDict): ClassDecorator {
-  return modelConfig(config);
+    return modelConfig(config);
 }
-
-function loadEnvFile(path: string): Record<string, string> {
-  if (!existsSync(path)) return {};
-  const content = readFileSync(path, 'utf8');
-  const result: Record<string, string> = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    let value = trimmed.slice(eq + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    result[key] = value;
-  }
-  return result;
-}
-
-function flattenEnv(
-  env: Record<string, string | undefined>,
-  prefix: string,
-  delimiter: string,
-  caseSensitive: boolean,
-): Record<string, string> {
-  const result: Record<string, string> = {};
-  const upperPrefix = prefix.toUpperCase();
-  for (const [key, value] of Object.entries(env)) {
-    if (value === undefined) continue;
-    if (prefix && !(caseSensitive ? key.startsWith(prefix) : key.toUpperCase().startsWith(upperPrefix))) continue;
-    const stripped = prefix ? key.slice(prefix.length) : key;
-    const path = stripped.split(delimiter).map((p) => (caseSensitive ? p : p.toLowerCase()));
-    result[path.join('__')] = value;
-  }
-  return result;
-}
-
-export abstract class BaseSettings extends BaseModel {
-  static modelConfig: SettingsConfigDict = {
-    extra: 'ignore',
-    populateByName: true,
-  };
-
-  static settingsValidate(
-    env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
-  ): InstanceType<typeof BaseSettings> {
-    const config = (this as { modelConfig?: SettingsConfigDict }).modelConfig ?? {};
-    const envPrefix = config.envPrefix ?? '';
-    const delimiter = config.envNestedDelimiter ?? '__';
-    const envFile = config.envFile !== false ? (config.envFile ?? '.env') : null;
-
-    let merged: Record<string, string | undefined> = { ...env };
-
-    if (envFile) {
-      const fileEnv = loadEnvFile(resolve(process.cwd(), envFile));
-      merged = { ...fileEnv, ...merged };
-    }
-
-    const flat = flattenEnv(merged, envPrefix, delimiter, config.caseSensitive ?? false);
-    collectModelFields(this);
-    const fields = (this as { modelFields?: Record<string, { name: string; alias?: string; fieldInfo?: { alias?: string } }> }).modelFields ?? {};
-
-    const data: Record<string, unknown> = {};
-    for (const [name, meta] of Object.entries(fields)) {
-      const envKey = (meta.fieldInfo?.alias ?? meta.alias ?? name).toUpperCase();
-      const nestedKey = name;
-      for (const [k, v] of Object.entries(flat)) {
-        if (k === nestedKey || k.endsWith(`__${nestedKey}`)) {
-          data[name] = coerceEnvValue(v);
-          break;
-        }
-      }
-
-      if (!(name in data)) {
-        const direct = merged[envKey] ?? merged[envKey.toLowerCase()];
-        if (direct !== undefined) data[name] = coerceEnvValue(direct);
-      }
-    }
-
-    return (this as unknown as typeof BaseModel).modelValidate(data) as InstanceType<typeof BaseSettings>;
-  }
-}
-
-function coerceEnvValue(value: string): unknown {
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  if (value === 'null') return null;
-  if (/^-?\d+$/.test(value)) return Number(value);
-  if (/^-?\d+\.\d+$/.test(value)) return Number(value);
-  if ((value.startsWith('[') && value.endsWith(']')) || (value.startsWith('{') && value.endsWith('}'))) {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  }
-  return value;
-}
-
-export { Field, modelConfig };
-
 ```
