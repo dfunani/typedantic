@@ -1,6 +1,6 @@
 {
     "name": "@typedantic/settings",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Environment and .env backed settings for Typedantic BaseModel",
     "type": "module",
     "main": "./dist/index.js",
