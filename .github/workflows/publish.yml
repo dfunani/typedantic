@@ -39,12 +39,17 @@ jobs:
       - name: Publish packages (OIDC)
         run: |
           set -euo pipefail
+          # --destination is relative to --cwd; use "." so tarball lands in the package dir.
+          # Pass the exact .tgz path (never a bare glob) so a miss never publishes the root.
           publish_pkg() {
             local cwd="$1"
+            local tgz
             rm -f "$cwd"/*.tgz
-            bun pm pack --cwd "$cwd" --destination "$cwd"
-            npm publish "$cwd"/*.tgz --access public
-            rm -f "$cwd"/*.tgz
+            bun pm pack --cwd "$cwd" --destination .
+            tgz=$(ls -1 "$cwd"/*.tgz)
+            test -f "$tgz"
+            npm publish "$tgz" --access public
+            rm -f "$tgz"
           }
           publish_pkg packages/typedantic-core
           publish_pkg packages/typedantic

@@ -80,31 +80,34 @@ npm cannot attach a trusted publisher until the package **exists**. Publish `1.0
 bun run build
 bun run pack:dry
 
-# Pack rewrites workspace:* → concrete versions (same as CI)
-rm -f packages/*/*.tgz
-bun pm pack --cwd packages/typedantic-core --destination packages/typedantic-core
-bun pm pack --cwd packages/typedantic --destination packages/typedantic
-bun pm pack --cwd packages/typedantic-settings --destination packages/typedantic-settings
+# Pack rewrites workspace:* → concrete versions (same as CI).
+# --destination is relative to --cwd; use "." (not the package path again).
+# Quote globs or use nullglob — bare *.tgz fails in zsh when no match.
+setopt NULL_GLOB  # zsh only; skip on bash
+rm -f packages/typedantic-core/*.tgz packages/typedantic/*.tgz packages/typedantic-settings/*.tgz
 
-npm publish packages/typedantic-core/*.tgz --access public
-npm publish packages/typedantic/*.tgz --access public
-npm publish packages/typedantic-settings/*.tgz --access public
-rm -f packages/*/*.tgz
+bun pm pack --cwd packages/typedantic-core --destination .
+bun pm pack --cwd packages/typedantic --destination .
+bun pm pack --cwd packages/typedantic-settings --destination .
+
+# Use explicit tarball paths (never globs): with zsh NULL_GLOB, a missing
+# *.tgz becomes `npm publish` with no args → publishes the private root monorepo.
+# Local publish cannot attach provenance (CI/OIDC only).
+npm publish ./packages/typedantic-core/typedantic-core-1.0.0.tgz --access public --provenance false
+npm publish ./packages/typedantic/typedantic-model-1.0.0.tgz --access public --provenance false
+npm publish ./packages/typedantic-settings/typedantic-settings-1.0.0.tgz --access public --provenance false
+
+rm -f packages/typedantic-core/*.tgz packages/typedantic/*.tgz packages/typedantic-settings/*.tgz
 ```
 
 ### 3.3 Attach trusted publishers (each package)
 
-On npmjs.com → package → **Settings → Trusted publishing** → **GitHub Actions**, or via CLI (npm ≥ 11.5.1, with 2FA):
+**Preferred — npm website** (works with any local npm):
 
-```bash
-# Repo must match package.json repository.url (dfunani/typedantic)
-# Workflow filename only — not the full path. Allow direct npm publish.
-npm trust github @typedantic/core --repo dfunani/typedantic --file publish.yml --allow-publish
-npm trust github @typedantic/model --repo dfunani/typedantic --file publish.yml --allow-publish
-npm trust github @typedantic/settings --repo dfunani/typedantic --file publish.yml --allow-publish
-```
+For each of `@typedantic/core`, `@typedantic/model`, `@typedantic/settings`:
 
-UI fields if not using the CLI:
+1. Open `https://www.npmjs.com/package/<name>/access` (or package → **Settings → Trusted publishing**)
+2. **GitHub Actions** → fill:
 
 | Field | Value |
 |-------|--------|
@@ -114,7 +117,23 @@ UI fields if not using the CLI:
 | Environment | *(leave empty — workflow does not use one)* |
 | Allowed actions | allow **`npm publish`** |
 
-Complete a validating CI publish within **2 days** of creating each trusted-publisher config (or recreate it).
+Complete a validating CI publish within **2 days** of creating each config (or recreate it).
+
+**Optional CLI** — needs npm **≥ 11.10** (`npm trust` does not exist on npm 10). Prefer the website unless you already have a compatible Node/npm.
+
+```bash
+# npm@latest (12.x) needs Node ^22.22.2 || ^24.15+ — Node 22.20 cannot install it.
+# Either upgrade Node, or install an 11.10+ release that still supports your Node:
+npm install -g npm@11.10.1
+npm --version   # confirm ≥ 11.10
+
+# Registry requires an allow-* flag (npm 11.10 without it → HTTP 400).
+# Use npm ≥ 11.21 (or the website). npm@12 needs a newer Node than 22.20.
+npm install -g npm@11.21.0
+npm trust github @typedantic/core --repo dfunani/typedantic --file publish.yml --allow-publish
+npm trust github @typedantic/model --repo dfunani/typedantic --file publish.yml --allow-publish
+npm trust github @typedantic/settings --repo dfunani/typedantic --file publish.yml --allow-publish
+```
 
 Optional hardening after OIDC works: package Settings → Publishing access → **Require 2FA and disallow tokens**.
 
@@ -125,7 +144,7 @@ Optional hardening after OIDC works: package Settings → Publishing access → 
 1. `bun pm pack` — rewrites `workspace:*` and builds the tarball  
 2. `npm publish <tarball>` — authenticates with GitHub OIDC  
 
-Provenance is automatic under trusted publishing (packages also set `"publishConfig.provenance": true`).
+Provenance is automatic under trusted publishing in GitHub Actions — do not set `"publishConfig.provenance": true` (it breaks local `npm publish` with `provider: null`).
 
 ---
 
