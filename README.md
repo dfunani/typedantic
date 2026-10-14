@@ -2,7 +2,7 @@
 
 Pydantic-style validation for TypeScript.
 
-**Status:** 0.3.0 — RootModel, annotated types, createModel, custom settings sources (plus V2 serializers/validators/JSON Schema/TypeAdapter). ESM-only, Node.js ≥ 20.
+**Status:** 1.0.0 — RootModel, annotated types, createModel, custom settings sources (plus V2 serializers/validators/JSON Schema/TypeAdapter). ESM-only, Node.js ≥ 20.
 
 > The unscoped npm name `typedantic` is already taken. Install the scoped packages below.
 
@@ -86,7 +86,7 @@ class AppSettings extends BaseSettings {
 const settings = AppSettings.settingsValidate(process.env);
 ```
 
-## Scope (0.3.0)
+## Scope (1.0.0)
 
 **Included:** primitives, literals, enums, arrays, objects, dates, unions, nested models, FastAPI-shaped `ValidationError` (dual `loc`/`msg` keys), settings env loading + custom sources, `@fieldValidator` / `@modelValidator`, `@fieldSerializer` / `@modelSerializer` / `@computedField`, `SchemaSerializer` dump options, `modelJsonSchema` / `toJsonSchema`, `TypeAdapter`, `modelValidateJson`, `modelCopy`, validating constructor, `RootModel`, annotated types (`EmailStr`, `HttpUrl`, `UUID`, `PositiveInt`, `SecretStr`, …), `createModel` / `extendModel`. See [CHANGELOG.md](./CHANGELOG.md).
 

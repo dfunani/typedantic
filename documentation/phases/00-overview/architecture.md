@@ -33,7 +33,7 @@
 - Model always depends on core.
 - Settings always depends on model.
 
-**Also in 0.3.0:** annotated types (`EmailStr`, …), `createModel` / `extendModel`, custom settings sources, `RootModel`.
+**Also in 1.0.0:** annotated types (`EmailStr`, …), `createModel` / `extendModel`, custom settings sources, `RootModel`.
 
 ## Naming: Field options vs IR
 

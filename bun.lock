@@ -19,7 +19,7 @@
     },
     "packages/typedantic": {
       "name": "@typedantic/model",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "dependencies": {
         "@typedantic/core": "workspace:*",
         "reflect-metadata": "^0.2.2",
@@ -30,11 +30,11 @@
     },
     "packages/typedantic-core": {
       "name": "@typedantic/core",
-      "version": "0.1.0",
+      "version": "1.0.0",
     },
     "packages/typedantic-settings": {
       "name": "@typedantic/settings",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "dependencies": {
         "@typedantic/model": "workspace:*",
       },

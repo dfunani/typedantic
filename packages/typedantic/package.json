@@ -1,6 +1,6 @@
 {
     "name": "@typedantic/model",
-    "version": "0.3.0",
+    "version": "1.0.0",
     "description": "Pydantic-style BaseModel, Field decorators, and model config for TypeScript",
     "type": "module",
     "main": "./dist/index.js",

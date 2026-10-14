@@ -109,7 +109,7 @@ keep `NPM_TOKEN`.
 
 ## 4. Versioning
 
-All three packages ship the **same version** for 0.1.x (keep them in lockstep).
+All three packages ship the **same version** for 1.x (keep them in lockstep).
 
 1. Bump `"version"` in:
    - `packages/typedantic-core/package.json`
@@ -162,7 +162,7 @@ bun pm pack --cwd packages/typedantic-core
 
 1. Push `main` with version bumps + changelog.
 2. GitHub → **Releases → Draft a new release**.
-3. Tag `v0.1.0` (must match package versions).
+3. Tag `v1.0.0` (must match package versions).
 4. Publish the release → triggers `.github/workflows/publish.yml`.
 5. Confirm Actions job succeeded.
 6. Verify:

@@ -55,7 +55,7 @@ Exported from `config.ts` and re-exported from the package entry:
 | `secretsDir` | unset | Directory of secret files (lowest priority when set) |
 | `extra` / `strict` / … | model defaults | Inherited from `ConfigDict` on `BaseModel` |
 
-## Settings sources (0.3.0)
+## Settings sources (1.0.0)
 
 Default priority (highest first): `initSettingsSource` → `envSettingsSource` → `dotenvSettingsSource`. Optional `secretsDir` appends `secretsDirectorySettingsSource`.
 

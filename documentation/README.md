@@ -81,7 +81,7 @@ pet!: Cat | Dog;
 
 **V2 (0.2.0) also includes:** JSON Schema, TypeAdapter, `@fieldValidator` / `@modelValidator`, `@fieldSerializer` / `@computedField`, dump options.
 
-**0.3.0 also includes:** annotated types, `createModel` / `extendModel`, custom settings sources, `RootModel`.
+**1.0.0 also includes:** annotated types, `createModel` / `extendModel`, custom settings sources, `RootModel`.
 
 ---
 

@@ -17,9 +17,9 @@ Always **build before test** when packages import each other via `dist`.
 
 | Directory | npm name | Version |
 |-----------|----------|---------|
-| `packages/typedantic-core` | `@typedantic/core` | 0.3.0 |
-| `packages/typedantic` | `@typedantic/model` | 0.3.0 |
-| `packages/typedantic-settings` | `@typedantic/settings` | 0.3.0 |
+| `packages/typedantic-core` | `@typedantic/core` | 1.0.0 |
+| `packages/typedantic` | `@typedantic/model` | 1.0.0 |
+| `packages/typedantic-settings` | `@typedantic/settings` | 1.0.0 |
 
 The unscoped name `typedantic` is taken on npm; publish only under `@typedantic/*`.
 
@@ -70,7 +70,7 @@ See [../../topics/common-pitfalls.md](../../topics/common-pitfalls.md) and [dist
 - [x] Settings prefix + nested env
 - [x] CI green on clean clone
 
-### Milestone 0.3.0
+### Milestone 1.0.0
 - [x] `RootModel`
 - [x] Annotated types (`EmailStr`, `HttpUrl`, `UUID`, ints, `SecretStr`)
 - [x] `createModel` / `extendModel`
