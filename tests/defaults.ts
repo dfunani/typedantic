@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { BaseModel, Field, modelConfig } from 'typedantic';
+import { BaseModel, Field, modelConfig } from '@typedantic/model';
 
 @modelConfig({ extra: 'forbid' })
 class Cart extends BaseModel {

@@ -6,10 +6,5 @@
     },
     "include": [
         "src"
-    ],
-    "paths": {
-        "typedantic": [
-            "../typedantic/dist/index.d.ts"
-        ]
-    }
+    ]
 }

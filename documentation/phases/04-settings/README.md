@@ -15,8 +15,8 @@ Corrections to apply: [../00-overview/corrections-vs-main.md](../00-overview/cor
 
 ```ts
 import 'reflect-metadata';
-import { Field } from 'typedantic';
-import { BaseSettings, settingsConfig } from 'typedantic-settings';
+import { Field } from '@typedantic/model';
+import { BaseSettings, settingsConfig } from '@typedantic/settings';
 
 @settingsConfig({ envPrefix: 'APP_', envNestedDelimiter: '__' })
 class AppSettings extends BaseSettings {

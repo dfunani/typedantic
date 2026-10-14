@@ -22,7 +22,7 @@ bun run --filter typedantic build
 
 ```ts
 import 'reflect-metadata';
-import { BaseModel, Field, modelConfig } from 'typedantic';
+import { BaseModel, Field, modelConfig } from '@typedantic/model';
 
 @modelConfig({ extra: 'forbid' })
 class Test extends BaseModel {

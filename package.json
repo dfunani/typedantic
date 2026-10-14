@@ -9,13 +9,14 @@
         "build": "turbo run build",
         "test": "vitest run",
         "functional-test": "bun run --parallel tests/*.ts",
-        "test:watch": "vitest",
         "typecheck": "turbo run typecheck",
-        "clean": "turbo run clean"
+        "clean": "turbo run clean",
+        "pack:dry": "bun pm pack --dry-run --cwd packages/typedantic-core && bun pm pack --dry-run --cwd packages/typedantic && bun pm pack --dry-run --cwd packages/typedantic-settings",
+        "publish:packages": "bun run build && bun run typecheck && bun run test && bun run functional-test && bun publish --access public --cwd packages/typedantic-core && bun publish --access public --cwd packages/typedantic && bun publish --access public --cwd packages/typedantic-settings"
     },
     "dependencies": {
-        "typedantic": "workspace:*",
-        "typedantic-settings": "workspace:*"
+        "@typedantic/model": "workspace:*",
+        "@typedantic/settings": "workspace:*"
     },
     "devDependencies": {
         "@types/node": "^22.10.0",

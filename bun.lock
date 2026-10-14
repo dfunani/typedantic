@@ -5,8 +5,8 @@
     "": {
       "name": "typedantic-monorepo",
       "dependencies": {
-        "typedantic": "workspace:*",
-        "typedantic-settings": "workspace:*",
+        "@typedantic/model": "workspace:*",
+        "@typedantic/settings": "workspace:*",
       },
       "devDependencies": {
         "@types/node": "^22.10.0",
@@ -18,7 +18,7 @@
       },
     },
     "packages/typedantic": {
-      "name": "typedantic",
+      "name": "@typedantic/model",
       "version": "0.1.0",
       "dependencies": {
         "@typedantic/core": "workspace:*",
@@ -27,19 +27,16 @@
       "peerDependencies": {
         "reflect-metadata": ">=0.2.0",
       },
-      "optionalPeers": [
-        "reflect-metadata",
-      ],
     },
     "packages/typedantic-core": {
       "name": "@typedantic/core",
       "version": "0.1.0",
     },
     "packages/typedantic-settings": {
-      "name": "typedantic-settings",
+      "name": "@typedantic/settings",
       "version": "0.1.0",
       "dependencies": {
-        "typedantic": "workspace:*",
+        "@typedantic/model": "workspace:*",
       },
       "peerDependencies": {
         "reflect-metadata": ">=0.2.0",
@@ -172,6 +169,10 @@
     "@turbo/windows-arm64": ["@turbo/windows-arm64@2.10.12", "", { "os": "win32", "cpu": "arm64" }, "sha512-0i0mVUa4kKk+/B3RwEwPMf9CB+T7ul56hn5FFHNA4VUNTOoLBEd6aNf3FaKfCatDNZ6cicCEf6if9QUTVyzzcA=="],
 
     "@typedantic/core": ["@typedantic/core@workspace:packages/typedantic-core"],
+
+    "@typedantic/model": ["@typedantic/model@workspace:packages/typedantic"],
+
+    "@typedantic/settings": ["@typedantic/settings@workspace:packages/typedantic-settings"],
 
     "@types/estree": ["@types/estree@1.0.9", "", {}, "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg=="],
 
@@ -312,10 +313,6 @@
     "tsup": ["tsup@8.5.1", "", { "dependencies": { "bundle-require": "^5.1.0", "cac": "^6.7.14", "chokidar": "^4.0.3", "consola": "^3.4.0", "debug": "^4.4.0", "esbuild": "^0.27.0", "fix-dts-default-cjs-exports": "^1.0.0", "joycon": "^3.1.1", "picocolors": "^1.1.1", "postcss-load-config": "^6.0.1", "resolve-from": "^5.0.0", "rollup": "^4.34.8", "source-map": "^0.7.6", "sucrase": "^3.35.0", "tinyexec": "^0.3.2", "tinyglobby": "^0.2.11", "tree-kill": "^1.2.2" }, "peerDependencies": { "@microsoft/api-extractor": "^7.36.0", "@swc/core": "^1", "postcss": "^8.4.12", "typescript": ">=4.5.0" }, "optionalPeers": ["@microsoft/api-extractor", "@swc/core", "postcss", "typescript"], "bin": { "tsup": "dist/cli-default.js", "tsup-node": "dist/cli-node.js" } }, "sha512-xtgkqwdhpKWr3tKPmCkvYmS9xnQK3m3XgxZHwSUjvfTjp7YfXe5tT3GgWi0F2N+ZSMsOeWeZFh7ZZFg5iPhing=="],
 
     "turbo": ["turbo@2.10.12", "", { "optionalDependencies": { "@turbo/darwin-64": "2.10.12", "@turbo/darwin-arm64": "2.10.12", "@turbo/linux-64": "2.10.12", "@turbo/linux-arm64": "2.10.12", "@turbo/windows-64": "2.10.12", "@turbo/windows-arm64": "2.10.12" }, "bin": { "turbo": "bin/turbo" } }, "sha512-AswgMPnpOoaVZHrrSBejETzEbuIA69OVGwfkHwfrY0A23VjWXBANzgq9+OymWOHAIArB7D1+1z498WY8fGg1Jw=="],
-
-    "typedantic": ["typedantic@workspace:packages/typedantic"],
-
-    "typedantic-settings": ["typedantic-settings@workspace:packages/typedantic-settings"],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

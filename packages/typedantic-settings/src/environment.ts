@@ -4,10 +4,9 @@ export function loadEnvFile(path: string): Record<string, string> {
     if (!existsSync(path)) return {};
     const content = readFileSync(path, 'utf8');
 
-    let result: Record<string, string> = {};
+    const result: Record<string, string> = {};
     for (const line of content.split('\n')) {
-        const parsed = parseEnvLine(line);
-        result = { ...result, ...parsed };
+        Object.assign(result, parseEnvLine(line));
     }
     return result;
 }
@@ -22,13 +21,20 @@ function parseEnvLine(line: string): Record<string, string> {
     const key = trimmed.slice(0, eq).trim();
     let value = trimmed.slice(eq + 1).trim();
 
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+    ) {
         value = value.slice(1, -1);
     }
 
     return { [key]: value };
 }
 
+/**
+ * Strip optional prefix and normalize delimiter segments into lowercase
+ * path keys joined by `__` (unless caseSensitive).
+ */
 export function flattenEnv(
     env: Record<string, string | undefined>,
     prefix: string,
@@ -39,27 +45,24 @@ export function flattenEnv(
     for (const [key, value] of Object.entries(env)) {
         if (value === undefined) continue;
 
-        if (!prefix) {
-            const envKey = extractEnvKeyFromPath(key, delimiter, caseSensitive);
-            result[envKey] = value;
-            continue;
+        if (prefix) {
+            if (caseSensitive && !key.startsWith(prefix)) continue;
+            if (!caseSensitive && !key.toUpperCase().startsWith(prefix.toUpperCase())) continue;
         }
 
-        if (caseSensitive && !key.startsWith(prefix)) continue;
-        if (!caseSensitive && !key.toUpperCase().startsWith(prefix.toUpperCase())) continue;
-
-        const stripped_key = key.slice(prefix.length);
-        const envKey = extractEnvKeyFromPath(stripped_key, delimiter, caseSensitive);
+        const stripped = prefix ? key.slice(prefix.length) : key;
+        const envKey = extractEnvKeyFromPath(stripped, delimiter, caseSensitive);
         result[envKey] = value;
     }
     return result;
 }
 
 function extractEnvKeyFromPath(key: string, delimiter: string, caseSensitive: boolean): string {
-    const path = key.split(delimiter).map((p) => (caseSensitive ? p : p.toLowerCase()));
-    return path.join('__');
+    return key
+        .split(delimiter)
+        .map((p) => (caseSensitive ? p : p.toLowerCase()))
+        .join('__');
 }
-
 
 export function parseEnvValue(value: string): unknown {
     if (value === 'true') return true;
@@ -67,7 +70,10 @@ export function parseEnvValue(value: string): unknown {
     if (value === 'null') return null;
     if (/^-?\d+$/.test(value)) return Number(value);
     if (/^-?\d+\.\d+$/.test(value)) return Number(value);
-    if ((value.startsWith('[') && value.endsWith(']')) || (value.startsWith('{') && value.endsWith('}'))) {
+    if (
+        (value.startsWith('[') && value.endsWith(']')) ||
+        (value.startsWith('{') && value.endsWith('}'))
+    ) {
         try {
             return JSON.parse(value);
         } catch {
@@ -75,4 +81,44 @@ export function parseEnvValue(value: string): unknown {
         }
     }
     return value;
+}
+
+/** Assign `a.b.c = value` into a plain object tree. */
+export function setNestedValue(
+    target: Record<string, unknown>,
+    path: string[],
+    value: unknown,
+): void {
+    let cursor: Record<string, unknown> = target;
+    for (let i = 0; i < path.length - 1; i++) {
+        const segment = path[i]!;
+        const next = cursor[segment];
+        if (next === undefined || typeof next !== 'object' || next === null || Array.isArray(next)) {
+            cursor[segment] = {};
+        }
+        cursor = cursor[segment] as Record<string, unknown>;
+    }
+    cursor[path[path.length - 1]!] = value;
+}
+
+export function lookupPrefixedEnv(
+    env: Record<string, string | undefined>,
+    prefix: string,
+    name: string,
+    caseSensitive: boolean,
+): string | undefined {
+    const candidates = caseSensitive
+        ? [`${prefix}${name}`]
+        : [
+              `${prefix}${name}`,
+              `${prefix}${name}`.toUpperCase(),
+              `${prefix}${name}`.toLowerCase(),
+              `${prefix.toUpperCase()}${name.toUpperCase()}`,
+              `${prefix.toLowerCase()}${name.toLowerCase()}`,
+          ];
+
+    for (const key of candidates) {
+        if (env[key] !== undefined) return env[key];
+    }
+    return undefined;
 }
