@@ -78,7 +78,8 @@ See [../../topics/common-pitfalls.md](../../topics/common-pitfalls.md) and [dist
 
 ### Distribution (first public release)
 - [ ] npm org `@typedantic` created
-- [ ] `NPM_TOKEN` in GitHub Actions secrets
+- [ ] First local publish done; trusted publishers on all three packages (`publish.yml`)
+- [ ] No `NPM_TOKEN` in GitHub secrets (OIDC only)
 - [ ] Package READMEs ship in tarball
-- [ ] GitHub Release / `publish:packages` succeeded
+- [ ] GitHub Release publish workflow succeeded
 - [ ] Fresh `npm install @typedantic/model` smoke passes

@@ -113,15 +113,14 @@ bun run bump -- patch    # commit + tag vX.Y.Z (no push)
 bun run bump:push -- minor
 ```
 
-Short path after `@typedantic` org + `NPM_TOKEN` exist:
+Short path after `@typedantic` org + trusted publishers exist (no `NPM_TOKEN`):
 
 ```bash
-bun run pack:dry
-bun run publish:packages
-# or: create a GitHub Release → .github/workflows/publish.yml
+bun run bump -- patch          # version + tag
+# push tag / create GitHub Release → .github/workflows/publish.yml (OIDC)
 ```
 
-Publish order is always **core → model → settings**. Bun rewrites `workspace:*` on publish.
+First-ever publish is local once, then attach trusted publishers — see [distribution.md](./documentation/phases/05-ship/distribution.md) §3.
 
 ## Documentation
 

@@ -35,4 +35,4 @@ Maintainers only. Full runbook:
 
 → [documentation/phases/05-ship/distribution.md](./documentation/phases/05-ship/distribution.md)
 
-Covers npm org `@typedantic`, local `npm login` profiles, granular `NPM_TOKEN`, GitHub Release / `publish:packages`, and how docs are distributed (GitHub curriculum + package READMEs).
+Covers npm org `@typedantic`, local `npm login`, **trusted publishing (OIDC)** for CI (no `NPM_TOKEN`), GitHub Release publish, and how docs are distributed (GitHub curriculum + package READMEs).

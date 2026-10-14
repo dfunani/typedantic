@@ -225,7 +225,7 @@ Tests: `packages/typedantic-settings/tests/settings.test.ts`.
 
 **→ [phases/05-ship/README.md](./phases/05-ship/README.md)** — CI, acceptance, troubleshooting  
 
-**→ [phases/05-ship/distribution.md](./phases/05-ship/distribution.md)** — npm org, CLI profiles, `NPM_TOKEN`, release, **docs distribution**
+**→ [phases/05-ship/distribution.md](./phases/05-ship/distribution.md)** — npm org, trusted publishing (OIDC), release, **docs distribution**
 
 ---
 

@@ -8,7 +8,7 @@ This is the maintainer runbook for shipping Typedantic **0.1+** to npm and makin
 - [ ] `bun run pack:dry` shows LICENSE + CHANGELOG + `dist/` only
 - [ ] CI green on `main` (`.github/workflows/ci.yml`)
 - [ ] npm org `@typedantic` exists and you are an owner/admin
-- [ ] Automation token stored as GitHub secret `NPM_TOKEN` (or trusted publishing configured)
+- [ ] CI uses **trusted publishing (OIDC)** — no `NPM_TOKEN` in GitHub (see §3)
 
 ---
 
@@ -49,61 +49,83 @@ npm view @typedantic/settings
 
 ---
 
-## 3. npm profiles & authentication
-
-You need two kinds of auth in practice:
+## 3. npm authentication (trusted publishing — no CI token)
 
 | Use case | How |
 |----------|-----|
-| Local publish / dry-run | Logged-in CLI profile (`npm login` or `bunx npm login`) |
-| CI / GitHub Actions | Granular access token in repo secret `NPM_TOKEN` |
+| Local first publish / emergency | Interactive `npm login` (2FA) — **not** stored in GitHub |
+| CI / GitHub Actions | [Trusted publishing](https://docs.npmjs.com/trusted-publishers/) via OIDC (`id-token: write`) |
+
+Do **not** add `NPM_TOKEN` (or any write token) to GitHub Actions secrets.
 
 ### 3.1 Local CLI profile
 
 ```bash
-# Interactive login (opens browser or prompts)
 npm login
-# or
-bunx npm login
-
 npm whoami
 npm org ls typedantic   # confirm membership
 ```
 
-Optional: named profiles via npm’s userconfig if you maintain multiple registries:
-
-```bash
-npm login --auth-type=web --scope=@typedantic --registry=https://registry.npmjs.org/
-```
-
-Ensure `~/.npmrc` (user) or project `.npmrc` does **not** commit tokens. Project may contain only:
+Project `.npmrc` must not contain tokens (only registry mapping is fine):
 
 ```ini
-# optional project .npmrc (no secrets)
 @typedantic:registry=https://registry.npmjs.org/
 ```
 
-### 3.2 Automation token (GitHub Actions)
+### 3.2 First publish (one-time, local)
 
-1. npmjs.com → **Access Tokens** → **Generate New Token**.
-2. Type: **Granular Access Token** (preferred) or classic Automation.
-3. Permissions:
-   - Packages: **Read and write** for `@typedantic/core`, `@typedantic/model`, `@typedantic/settings`  
-     (or entire `@typedantic` org if the UI allows).
-   - Bypass 2FA for automation: enabled for CI tokens.
-4. Copy the token once.
-5. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
-   - Name: `NPM_TOKEN`
-   - Value: the token
+npm cannot attach a trusted publisher until the package **exists**. Publish `1.0.0` once from your machine (interactive 2FA), then switch CI to OIDC:
 
-The publish workflow passes it as `NODE_AUTH_TOKEN` (see `.github/workflows/publish.yml`).
+```bash
+bun run build
+bun run pack:dry
 
-### 3.3 Optional: Trusted Publishing (OIDC)
+# Pack rewrites workspace:* → concrete versions (same as CI)
+rm -f packages/*/*.tgz
+bun pm pack --cwd packages/typedantic-core --destination packages/typedantic-core
+bun pm pack --cwd packages/typedantic --destination packages/typedantic
+bun pm pack --cwd packages/typedantic-settings --destination packages/typedantic-settings
 
-Packages already set `"publishConfig": { "provenance": true }`. If you enable
-[npm trusted publishing](https://docs.npmjs.com/trusted-publishers) for the GitHub
-repo, you can reduce reliance on long-lived tokens. Until that is configured,
-keep `NPM_TOKEN`.
+npm publish packages/typedantic-core/*.tgz --access public
+npm publish packages/typedantic/*.tgz --access public
+npm publish packages/typedantic-settings/*.tgz --access public
+rm -f packages/*/*.tgz
+```
+
+### 3.3 Attach trusted publishers (each package)
+
+On npmjs.com → package → **Settings → Trusted publishing** → **GitHub Actions**, or via CLI (npm ≥ 11.5.1, with 2FA):
+
+```bash
+# Repo must match package.json repository.url (dfunani/typedantic)
+# Workflow filename only — not the full path. Allow direct npm publish.
+npm trust github @typedantic/core --repo dfunani/typedantic --file publish.yml --allow-publish
+npm trust github @typedantic/model --repo dfunani/typedantic --file publish.yml --allow-publish
+npm trust github @typedantic/settings --repo dfunani/typedantic --file publish.yml --allow-publish
+```
+
+UI fields if not using the CLI:
+
+| Field | Value |
+|-------|--------|
+| Organization or user | `dfunani` |
+| Repository | `typedantic` |
+| Workflow filename | `publish.yml` |
+| Environment | *(leave empty — workflow does not use one)* |
+| Allowed actions | allow **`npm publish`** |
+
+Complete a validating CI publish within **2 days** of creating each trusted-publisher config (or recreate it).
+
+Optional hardening after OIDC works: package Settings → Publishing access → **Require 2FA and disallow tokens**.
+
+### 3.4 Why the workflow uses `npm publish` (not `bun publish`)
+
+`bun publish` does not support npm OIDC yet. CI therefore:
+
+1. `bun pm pack` — rewrites `workspace:*` and builds the tarball  
+2. `npm publish <tarball>` — authenticates with GitHub OIDC  
+
+Provenance is automatic under trusted publishing (packages also set `"publishConfig.provenance": true`).
 
 ---
 
@@ -179,21 +201,14 @@ npm view @typedantic/model dependencies
 
 ### Option B — Manual workflow dispatch
 
-Actions → **Publish** → **Run workflow** (requires `NPM_TOKEN`).
+Actions → **Publish** → **Run workflow** (OIDC; packages must already have trusted publishers configured).
 
-### Option C — Local publish
+### Option C — Local publish (emergency / first release)
 
 ```bash
 npm whoami   # must belong to @typedantic
-bun run publish:packages
-```
-
-Equivalent manual order:
-
-```bash
-bun publish --access public --cwd packages/typedantic-core
-bun publish --access public --cwd packages/typedantic
-bun publish --access public --cwd packages/typedantic-settings
+# Prefer the pack + npm publish flow in §3.2 so tarballs match CI.
+# Or: bun run publish:packages  (uses bun publish; requires local npm login)
 ```
 
 If a middle package fails, fix and republish **only remaining** packages; do not republish a version that already succeeded (bump instead).
@@ -314,7 +329,7 @@ Version: ____
 [ ] bun run pack:dry reviewed
 [ ] CI green on main
 [ ] npm org membership confirmed (npm org ls typedantic)
-[ ] NPM_TOKEN present in GitHub Actions secrets (or trusted publisher)
+[ ] Trusted publishers on all three packages → `publish.yml` / `dfunani/typedantic` (no NPM_TOKEN)
 [ ] git tag vX.Y.Z pushed / GitHub Release published
 [ ] npm view @typedantic/{core,model,settings} version == X.Y.Z
 [ ] Fresh install smoke in empty project
