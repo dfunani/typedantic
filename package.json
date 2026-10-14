@@ -12,7 +12,9 @@
         "typecheck": "turbo run typecheck",
         "clean": "turbo run clean",
         "pack:dry": "bun pm pack --dry-run --cwd packages/typedantic-core && bun pm pack --dry-run --cwd packages/typedantic && bun pm pack --dry-run --cwd packages/typedantic-settings",
-        "publish:packages": "bun run build && bun run typecheck && bun run test && bun run functional-test && bun publish --access public --cwd packages/typedantic-core && bun publish --access public --cwd packages/typedantic && bun publish --access public --cwd packages/typedantic-settings"
+        "publish:packages": "bun run build && bun run typecheck && bun run test && bun run functional-test && bun publish --access public --cwd packages/typedantic-core && bun publish --access public --cwd packages/typedantic && bun publish --access public --cwd packages/typedantic-settings",
+        "bump": "bumpp",
+        "bump:push": "bumpp --push"
     },
     "dependencies": {
         "@typedantic/model": "workspace:*",
@@ -20,6 +22,7 @@
     },
     "devDependencies": {
         "@types/node": "^22.10.0",
+        "bumpp": "^12.3.0",
         "reflect-metadata": "^0.2.2",
         "tsup": "^8.3.5",
         "turbo": "^2.3.3",

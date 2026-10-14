@@ -106,6 +106,13 @@ Full guide (npm org, profiles, tokens, release, **docs distribution**):
 
 → **[documentation/phases/05-ship/distribution.md](./documentation/phases/05-ship/distribution.md)**
 
+Version bump (lockstep, like Python `bumpver`):
+
+```bash
+bun run bump -- patch    # commit + tag vX.Y.Z (no push)
+bun run bump:push -- minor
+```
+
 Short path after `@typedantic` org + `NPM_TOKEN` exist:
 
 ```bash

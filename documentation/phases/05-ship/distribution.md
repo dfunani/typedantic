@@ -111,13 +111,16 @@ keep `NPM_TOKEN`.
 
 All three packages ship the **same version** for 1.x (keep them in lockstep).
 
-1. Bump `"version"` in:
-   - `packages/typedantic-core/package.json`
-   - `packages/typedantic/package.json`
-   - `packages/typedantic-settings/package.json`
-2. Update root + package `CHANGELOG.md` entries.
-3. Commit, e.g. `chore: release 0.1.1`.
-4. Tag: `git tag v0.1.1 && git push origin v0.1.1`.
+Use **[bumpp](https://github.com/antfu-collective/bumpp)** (JS analogue of Python `bumpver`), configured in `bump.config.ts`:
+
+```bash
+bun run bump              # interactive: patch / minor / major / custom
+bun run bump -- patch     # bump patch, commit + tag vX.Y.Z (no push)
+bun run bump -- 1.1.0     # set exact version
+bun run bump:push -- minor  # also git push commit + tag
+```
+
+It updates `"version"` in all three `packages/*/package.json`, then commits `chore: release vX.Y.Z` and tags `vX.Y.Z` (push only with `bump:push`). Update `CHANGELOG.md` (and docs that mention the version) in the same release commit or beforehand. Do **not** hand-edit package versions out of lockstep.
 
 Semver for this project:
 
@@ -125,7 +128,7 @@ Semver for this project:
 |------|------|
 | patch | Bug fixes, docs-only consumer fixes |
 | minor | New backward-compatible API |
-| major | Breaking API (after 1.0; before 1.0, minors may break — document in CHANGELOG) |
+| major | Breaking API (document in CHANGELOG) |
 
 ---
 
